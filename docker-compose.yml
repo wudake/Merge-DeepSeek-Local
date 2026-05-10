@@ -45,7 +45,7 @@ services:
       dockerfile: Dockerfile
     container_name: app-operations-api
     restart: unless-stopped
-    command: ["sh", "-c", "npx prisma migrate deploy && node dist/src/main"]
+    command: ["/app/entrypoint.sh"]
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app_password}@postgres:5432/operations
       - REDIS_URL=redis://redis:6379/0
@@ -53,6 +53,10 @@ services:
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-24h}
       - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN:-7d}
       - PORT=3000
+      - PGHOST=postgres
+      - PGUSER=${POSTGRES_USER:-app}
+      - PGPASSWORD=${POSTGRES_PASSWORD:-app_password}
+      - PGDATABASE=operations
     depends_on:
       postgres:
         condition: service_healthy

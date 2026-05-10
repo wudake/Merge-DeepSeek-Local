@@ -770,6 +770,7 @@
     </div>
 
     <script>
+        const API_BASE = '/video-auto';
         let currentNoteId = null;
         let logosData = [];
         let bgmsData = [];
@@ -777,7 +778,7 @@
         // 加载用户信息
         async function loadUserInfo() {
             try {
-                const res = await fetch('/api/user/info');
+                const res = await fetch(API_BASE + '/api/user/info');
                 const data = await res.json();
                 if (data.success) {
                     document.getElementById('userName').textContent = data.user_name;
@@ -790,7 +791,7 @@
         // 登出
         async function logout() {
             try {
-                await fetch('/api/logout', { method: 'POST' });
+                await fetch(API_BASE + '/api/logout', { method: 'POST' });
                 window.location.href = '/login';
             } catch (e) {
                 console.error('登出失败:', e);
@@ -819,7 +820,7 @@
 
         async function loadLogos() {
             try {
-                const res = await fetch('/api/logos/list');
+                const res = await fetch(API_BASE + '/api/logos/list');
                 const data = await res.json();
                 logosData = data.logos || [];
                 
@@ -841,7 +842,7 @@
 
         async function loadBgms() {
             try {
-                const res = await fetch('/api/bgm/list');
+                const res = await fetch(API_BASE + '/api/bgm/list');
                 const data = await res.json();
                 bgmsData = data.bgms || [];
                 
@@ -870,7 +871,7 @@
 
             setLoading('btn-download', true);
             try {
-                const res = await fetch('/api/download', {
+                const res = await fetch(API_BASE + '/api/download', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url })
@@ -903,7 +904,7 @@
             formData.append('file', input.files[0]);
 
             try {
-                const res = await fetch('/api/upload/logo', { method: 'POST', body: formData });
+                const res = await fetch(API_BASE + '/api/upload/logo', { method: 'POST', body: formData });
                 const result = await res.json();
                 if (result.success) {
                     alert('✅ ' + result.message);
@@ -922,7 +923,7 @@
             formData.append('file', input.files[0]);
 
             try {
-                const res = await fetch('/api/upload/bgm', { method: 'POST', body: formData });
+                const res = await fetch(API_BASE + '/api/upload/bgm', { method: 'POST', body: formData });
                 const result = await res.json();
                 if (result.success) {
                     alert('✅ ' + result.message);
@@ -967,7 +968,7 @@
             };
 
             try {
-                const res = await fetch('/api/edit', {
+                const res = await fetch(API_BASE + '/api/edit', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ note_id: currentNoteId, config })
@@ -1000,7 +1001,7 @@
         async function refreshQueueStatus() {
             try {
                 // 获取队列整体状态
-                const queueRes = await fetch('/api/queue/status');
+                const queueRes = await fetch(API_BASE + '/api/queue/status');
                 const queueData = await queueRes.json();
                 
                 if (queueData.success) {
@@ -1031,7 +1032,7 @@
                 }
                 
                 // 获取用户任务列表
-                const tasksRes = await fetch('/api/tasks/my?limit=10');
+                const tasksRes = await fetch(API_BASE + '/api/tasks/my?limit=10');
                 const tasksData = await tasksRes.json();
                 
                 if (tasksData.success) {
@@ -1106,7 +1107,7 @@
 
             setLoading('btn-download', true);
             try {
-                const res = await fetch('/api/download', {
+                const res = await fetch(API_BASE + '/api/download', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url })
@@ -1211,7 +1212,7 @@
             };
 
             try {
-                const res = await fetch('/api/edit', {
+                const res = await fetch(API_BASE + '/api/edit', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ note_id: currentNoteId, config })

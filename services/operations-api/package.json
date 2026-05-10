@@ -41,6 +41,9 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.0"
   },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
   "pnpm": {
     "onlyBuiltDependencies": ["@prisma/client", "@prisma/engines", "@nestjs/core", "prisma", "@scarf/scarf"]
   },
