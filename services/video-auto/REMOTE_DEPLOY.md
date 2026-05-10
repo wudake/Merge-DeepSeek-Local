@@ -1,6 +1,6 @@
-# Dake-Video-Auto 远程服务器部署指南
+# Video Auto 模块 — 远程服务器独立部署
 
-本文档介绍如何将 Dake-Video-Auto 项目部署到远程 Linux 服务器。
+> 此文档适用于模块独立部署到远程服务器。推荐使用项目级 [Docker Compose 部署](../../README.md#快速开始)。
 
 ## 📋 系统要求
 
@@ -46,8 +46,8 @@ sudo yum install -y nss atk at-spi2-atk libXcomposite libXdamage \
 
 ```bash
 cd /opt  # 或你想部署的目录
-sudo git clone https://github.com/wudake/Dake-Video-Auto.git
-cd Dake-Video-Auto
+sudo git clone https://github.com/wudake/Merge-DeepSeek-Local.git
+cd Merge-DeepSeek-Local/services/video-auto
 sudo chown -R $USER:$USER .
 ```
 

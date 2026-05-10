@@ -1,8 +1,8 @@
-# Dake-Video-Auto 远程服务器部署指南
+# Video Auto 模块 — 开发/独立部署
 
-## 📋 部署概述
+> 此文档适用于模块独立开发调试。如需部署完整项目，请参考 [根目录 README](../../README.md) 使用 Docker Compose 一键启动。
 
-本文档详细介绍如何将 Dake-Video-Auto 部署到远程服务器（VPS/云服务器），支持 Ubuntu 20.04+/CentOS 7+ 系统。
+## 本地开发
 
 ---
 

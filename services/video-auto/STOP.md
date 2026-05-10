@@ -1,6 +1,16 @@
-# Dake-Video-Auto 远程服务器停止/重启指南
+# Video Auto 模块 — 停止/重启
 
-## 方法一：前台运行停止（Ctrl+C）
+在 Merge-DeepSeek-Local 项目中使用以下命令：
+
+```bash
+# 在项目根目录执行
+docker compose stop video-auto      # 停止
+docker compose start video-auto     # 启动
+docker compose restart video-auto   # 重启
+docker compose logs -f video-auto   # 查看日志
+```
+
+## 独立部署场景
 
 如果你在终端直接运行 `python app_simple.py`：
 

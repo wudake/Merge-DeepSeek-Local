@@ -1,6 +1,6 @@
-# Dake-Video-Auto Docker 部署指南
+# Video Auto 模块 — Docker 独立部署
 
-本文档介绍如何使用 Docker 和 Docker Compose 部署 Dake-Video-Auto 项目。
+> 此文档适用于模块独立容器化部署。如需部署完整项目，请参考 [根目录 README](../../README.md) 使用项目级 Docker Compose 一键启动。
 
 ---
 
@@ -18,8 +18,8 @@
 ### 1. 克隆项目
 
 ```bash
-git clone https://github.com/wudake/Dake-Video-Auto.git
-cd Dake-Video-Auto
+git clone https://github.com/wudake/Merge-DeepSeek-Local.git
+cd Merge-DeepSeek-Local/services/video-auto
 ```
 
 ### 2. 启动服务
@@ -364,8 +364,8 @@ sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker
 sudo chmod +x /usr/local/bin/docker-compose
 
 # 4. 部署
-git clone https://github.com/wudake/Dake-Video-Auto.git
-cd Dake-Video-Auto
+git clone https://github.com/wudake/Merge-DeepSeek-Local.git
+cd Merge-DeepSeek-Local/services/video-auto
 docker-compose up -d
 
 # 5. 配置安全组，开放 5000 端口
@@ -391,8 +391,8 @@ sudo curl -L https://github.com/docker/compose/releases/latest/download/docker-c
 sudo chmod +x /usr/local/bin/docker-compose
 
 # 部署
-git clone https://github.com/wudake/Dake-Video-Auto.git
-cd Dake-Video-Auto
+git clone https://github.com/wudake/Merge-DeepSeek-Local.git
+cd Merge-DeepSeek-Local/services/video-auto
 docker-compose up -d
 ```
 

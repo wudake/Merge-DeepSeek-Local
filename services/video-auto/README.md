@@ -1,8 +1,21 @@
-# Dake-Video-Auto - 视频自动化处理工具
+# Video Auto — 视频自动化处理模块
+
+> 这是 [Merge-DeepSeek-Local](https://github.com/wudake/Merge-DeepSeek-Local) 项目的子模块，作为 Docker Compose 集群的一部分运行。如需部署整个项目，请参考 [根目录 README](../../README.md)。
 
 一款面向内容创作者的**全功能视频自动化处理工具**，支持**视频下载**、**AI 配音 (TTS)**、**智能剪辑**、**多平台适配**一站式完成。
 
-适合工厂宣传、产品展示、社媒短视频批量制作。
+---
+
+## 在集成项目中的位置
+
+```
+Merge-DeepSeek-Local/
+├── docker-compose.yml       ← video-auto 作为一个 service 运行
+├── frontend/                ← React 前端通过 /video-auto 路径嵌入
+└── services/video-auto/     ← 本目录
+```
+
+通过根目录 `docker compose up -d` 一键启动所有服务，video-auto 运行在 Nginx 反向代理后，通过 `http://localhost/video-auto/` 访问。
 
 ---
 
@@ -65,34 +78,44 @@
 
 ---
 
-## 🚀 快速开始
+## 部署方式
 
-### 安装
+本模块作为 Merge-DeepSeek-Local 的一部分通过 Docker Compose 部署。详见 [根目录部署文档](../../README.md#快速开始)。
 
 ```bash
-# 克隆项目
-git clone https://github.com/wudake/Dake-Video-Auto.git
-cd Dake-Video-Auto
-
-# 创建虚拟环境
-python3 -m venv venv
-source venv/bin/activate
-
-# 安装依赖
-pip install -r requirements.txt
-
-# 安装 Playwright 浏览器
-playwright install chromium
+# 在项目根目录执行
+docker compose up -d
 ```
 
-### 启动服务
+独立开发/调试请参考 [DOCKER.md](./DOCKER.md)。
 
-```bash
-# 启动 Web 服务
-python app_simple.py
+---
 
-# 访问 http://localhost:5000
-# 或 http://服务器IP:5000
+## 📁 目录结构
+
+```
+video-auto/
+├── app_simple.py              # Flask 主应用
+├── core/
+│   ├── editor_advanced.py     # 视频编辑器
+│   ├── tts_generator.py       # TTS 语音生成器
+│   ├── downloader_pw.py       # 小红书下载器
+│   ├── douyin_downloader.py   # 抖音下载器
+│   ├── publish_assistant.py   # 发布助手
+│   └── qr_generator.py        # 二维码生成器
+├── templates/                 # Flask Jinja2 模板
+│   ├── index.html
+│   ├── index_multi_user.html
+│   ├── login.html
+│   └── auth/login.html
+├── assets/
+│   ├── logos/                 # Logo 文件
+│   ├── bgm/                   # BGM 音乐 (27首)
+│   └── tts/                   # TTS 生成文件
+├── static/                    # 二维码等静态文件
+├── videos/configs/            # 视频剪辑配置
+├── output/                    # 剪辑后视频
+└── docs/                      # 模块文档
 ```
 
 ---
@@ -113,83 +136,23 @@ python app_simple.py
 3. 支持格式：MP4, MOV, AVI, MKV, WEBM, M4V
 4. 上传成功后自动跳转到剪辑配置
 
-### 🎙️ AI 配音使用流程
+### AI 配音使用流程
 
-1. **生成语音**
-   - 在 TTS 面板输入文案
-   - 选择音色（如"晓晓"、"云健"等）
-   - 调节语速 (0.5x - 2.0x)
-   - 点击"生成语音"
-
-2. **试听确认**
-   - 生成后可立即试听
-   - 不满意可重新生成
-
-3. **应用到视频**
-   - 剪辑时勾选"使用 TTS 配音"
-   - 选择已生成的 TTS 文件
-   - TTS 音频将替换视频原声
+1. **生成语音** — 在 TTS 面板输入文案，选择音色，调节语速，点击"生成语音"
+2. **试听确认** — 生成后可立即试听，不满意可重新生成
+3. **应用到视频** — 剪辑时勾选"使用 TTS 配音"，选择已生成的 TTS 文件
 
 ### 视频剪辑配置
 
-**Logo 设置**
-- 上传 Logo 文件 (PNG 格式，透明背景最佳)
-- 选择位置：左上/右上/左下/右下/底部居中
-- 调节大小 (5% - 30%)
+**Logo 设置** — 上传 Logo 文件 (PNG 透明背景最佳)，选择位置（左上/右上/左下/右下/底部居中），调节大小 (5%–30%)
 
-**BGM 设置**
-- 上传 BGM 文件 (MP3/M4A/WAV)
-- BGM 列表按文件名自动排序
-- 调节原声/BGM 音量
-- 可选"使用 BGM 替换原声"
+**BGM 设置** — 上传 BGM 文件 (MP3/M4A/WAV)，BGM 列表按文件名自动排序，调节原声/BGM 音量
 
-**TTS 配音设置**
-- 输入配音文案
-- 选择音色（30+ 种可选）
-- 调节语速
-- 生成并试听
-- 应用到视频
+**TTS 配音设置** — 输入配音文案，选择音色（22种可选），调节语速，生成并试听，应用到视频
 
-**字幕设置**
-- 勾选"添加字幕"
-- 输入字幕内容
-- 设置显示时间段
-- 选择样式和位置
+**字幕设置** — 勾选"添加字幕"，输入内容，设置显示时间段，选择样式和位置
 
-**视频效果**
-- 水平镜像：一键去重
-- 裁剪首尾：去除开头/结尾片段
-- 播放速度：0.8x - 2.0x
-- 调色优化：亮度/对比度/饱和度
-
----
-
-## 📁 目录结构
-
-```
-Dake-Video-Auto/
-├── app_simple.py              # Flask 主应用
-├── download_worker.py         # 下载工作进程
-├── edit_worker.py             # 剪辑工作进程
-├── core/
-│   ├── editor_advanced.py     # 视频编辑器
-│   ├── tts_generator.py       # TTS 语音生成器 ⭐
-│   ├── downloader_pw.py       # 小红书下载器
-│   ├── douyin_downloader.py   # 抖音下载器 (暂停)
-│   ├── publish_assistant.py   # 发布助手
-│   └── qr_generator.py        # 二维码生成器
-├── templates/
-│   └── index.html             # Web 界面
-├── videos/raw/                # 原始视频
-├── output/                    # 剪辑后视频
-├── assets/
-│   ├── logos/                 # Logo 文件
-│   ├── bgm/                   # BGM 文件
-│   └── tts/                   # TTS 生成文件 ⭐
-├── static/                    # 二维码等静态文件
-├── logs/                      # 日志文件
-└── docs/                      # 文档
-```
+**视频效果** — 水平镜像（去重）、裁剪首尾、播放速度 0.8x–2.0x、调色优化
 
 ---
 
@@ -345,29 +308,16 @@ A: 编辑 `core/editor_advanced.py` 中的 `pos_map` 配置。
 
 ---
 
-## 📚 详细文档
+## 📚 相关文档
 
-- [需求文档](docs/REQUIREMENTS.md) - 详细功能需求
-- [安装部署文档](DEPLOY.md) - 完整安装与部署配置说明
-- [Docker 部署](DOCKER.md) - Docker 容器化部署
-- [远程部署](REMOTE_DEPLOY.md) - 远程服务器部署
-- [多用户方案](docs/3_USERS_PLAN.md) - 3人团队使用方案
-- [Cookie配置](cookies/README.md) - 抖音Cookie配置（暂停）
+- [需求文档](docs/REQUIREMENTS.md) — 详细功能需求
+- [Docker 独立部署](DOCKER.md) — 模块独立 Docker 部署
+- [多用户方案](docs/3_USERS_PLAN.md) — 3 人团队使用方案
+- [Cookie 配置](cookies/README.md) — 抖音 Cookie 配置
+- [项目总览](../../README.md) — 回到 Merge-DeepSeek-Local 主文档
 
 ---
 
 ## 📄 License
 
 MIT
-
----
-
-## 👥 项目信息
-
-| 项目 | 信息 |
-|------|------|
-| **项目路径** | `/home/dake/Dake-Video-Auto/` |
-| **维护者** | Dake & Zhushou |
-| **创建时间** | 2026-03-10 |
-| **最后更新** | 2026-05-07 (v6.0.0+) |
-| **服务对象** | AT-Machining (数控加工) & Boswindor (门窗制造) |
