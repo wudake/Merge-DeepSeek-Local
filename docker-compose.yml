@@ -1,0 +1,159 @@
+services:
+  # ==========================================
+  # SHARED INFRASTRUCTURE
+  # ==========================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: app-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-app_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: app-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
+  # BACKEND SERVICES
+  # ==========================================
+
+  # --- OPERATIONS API (NestJS) ---
+  operations-api:
+    build:
+      context: ./services/operations-api
+      dockerfile: Dockerfile
+    container_name: app-operations-api
+    restart: unless-stopped
+    command: ["sh", "-c", "npx prisma migrate deploy && node dist/src/main"]
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app_password}@postgres:5432/operations
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET=${JWT_SECRET:-app-shared-jwt-secret-change-me}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-24h}
+      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN:-7d}
+      - PORT=3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # --- SCRIPTS API (FastAPI) ---
+  scripts-api:
+    build:
+      context: ./services/scripts-api
+      dockerfile: Dockerfile
+    container_name: app-scripts-api
+    restart: unless-stopped
+    environment:
+      - REDIS_URL=redis://redis:6379/1
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - JWT_SECRET=${JWT_SECRET:-app-shared-jwt-secret-change-me}
+      - API_KEY=${SCRIPTS_API_KEY:-dev-api-key-change-me}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - TEMP_DIR=./temp
+      - OUTPUT_DIR=./output
+    volumes:
+      - scripts_temp:/app/temp
+      - scripts_output:/app/output
+      - ./services/scripts-api/src:/app/src
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # --- SCRIPTS WORKER (Celery) ---
+  scripts-worker:
+    build:
+      context: ./services/scripts-api
+      dockerfile: Dockerfile
+    container_name: app-scripts-worker
+    restart: unless-stopped
+    command: celery -A api.celery_app worker --loglevel=info --concurrency=2
+    environment:
+      - REDIS_URL=redis://redis:6379/1
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - JWT_SECRET=${JWT_SECRET:-app-shared-jwt-secret-change-me}
+      - API_KEY=${SCRIPTS_API_KEY:-dev-api-key-change-me}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - TEMP_DIR=./temp
+      - OUTPUT_DIR=./output
+    volumes:
+      - scripts_temp:/app/temp
+      - scripts_output:/app/output
+      - whisper_models:/root/.cache/whisper
+      - ./services/scripts-api/src:/app/src
+    depends_on:
+      - redis
+      - scripts-api
+
+  # --- VIDEO AUTO (Flask) ---
+  video-auto:
+    build:
+      context: ./services/video-auto
+      dockerfile: Dockerfile
+    container_name: app-video-auto
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+      - JWT_SECRET=${JWT_SECRET:-app-shared-jwt-secret-change-me}
+      - PORT=5000
+    volumes:
+      - videoauto_videos:/app/videos
+      - videoauto_output:/app/output
+      - videoauto_assets:/app/assets
+      - videoauto_static:/app/static
+      - videoauto_config:/app/config
+
+  # ==========================================
+  # REVERSE PROXY
+  # ==========================================
+  nginx:
+    image: nginx:alpine
+    container_name: app-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./frontend/dist:/usr/share/nginx/html:ro
+      - scripts_output:/var/www/scripts-output:ro
+    depends_on:
+      - operations-api
+      - scripts-api
+      - video-auto
+
+volumes:
+  postgres_data:
+  redis_data:
+  whisper_models:
+  scripts_temp:
+  scripts_output:
+  videoauto_videos:
+  videoauto_output:
+  videoauto_assets:
+  videoauto_static:
+  videoauto_config:

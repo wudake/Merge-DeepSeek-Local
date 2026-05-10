@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dake视频自动化 - 登录</title>
+    <!-- 徽标 - 现代渐变风格DK图标 -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%236366f1'/%3E%3Cstop offset='100%25' style='stop-color:%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='22' fill='url(%23g)'/%3E%3Ctext x='50' y='68' font-size='42' text-anchor='middle' fill='white' font-family='-apple-system,BlinkMacSystemFont,Segoe UI,Arial,sans-serif' font-weight='800' letter-spacing='-2'%3EDK%3C/text%3E%3C/svg%3E">
+    <style>
+        /* Ant Design 统一风格 */
+        :root {
+            --primary: #1677ff;
+            --primary-hover: #4096ff;
+            --primary-bg: #e6f4ff;
+            --text: #262626;
+            --text-secondary: #8c8c8c;
+            --bg: #f5f5f5;
+            --bg-white: #ffffff;
+            --border: #d9d9d9;
+            --error: #ff4d4f;
+            --error-bg: #fff2f0;
+            --radius: 8px;
+            --radius-sm: 6px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .login-container {
+            background: var(--bg-white);
+            border: 1px solid #f0f0f0;
+            border-radius: var(--radius);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 9px 28px 8px rgba(0,0,0,0.05), 0 6px 16px 0 rgba(0,0,0,0.08), 0 3px 6px -4px rgba(0,0,0,0.12);
+        }
+
+        .logo { text-align: center; margin-bottom: 28px; }
+
+        .logo-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--primary);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 18px;
+            font-size: 28px;
+            font-weight: 800;
+            color: white;
+            box-shadow: 0 4px 16px rgba(22, 119, 255, 0.25);
+        }
+
+        .logo h1 { color: var(--text); font-size: 22px; margin-bottom: 6px; font-weight: 700; }
+
+        .logo p { color: var(--text-secondary); font-size: 14px; }
+
+        .form-group { margin-bottom: 18px; }
+
+        .form-group label {
+            display: block;
+            color: var(--text);
+            font-size: 14px;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 9px 12px;
+            background: var(--bg-white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.1);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 9px;
+            background: var(--primary);
+            border: none;
+            border-radius: var(--radius-sm);
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 0 rgba(22, 119, 255, 0.06);
+        }
+
+        .btn-login:hover { background: var(--primary-hover); }
+
+        /* 账号提示横幅 */
+        .credentials-banner {
+            background: var(--primary-bg);
+            border: 2px dashed #91caff;
+            border-radius: var(--radius);
+            padding: 18px;
+            margin-bottom: 22px;
+            text-align: center;
+        }
+
+        .banner-title {
+            color: var(--primary);
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 14px;
+        }
+
+        .credentials-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .credential-item {
+            background: var(--bg-white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .credential-item:hover {
+            border-color: var(--primary);
+            background: var(--primary-bg);
+        }
+
+        .credential-user {
+            color: var(--text);
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+
+        .credential-pass {
+            color: var(--primary);
+            font-family: monospace;
+            font-size: 12px;
+            background: var(--primary-bg);
+            padding: 2px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .banner-hint { color: var(--text-secondary); font-size: 12px; }
+
+        .error-message {
+            background: var(--error-bg);
+            border: 1px solid #ffccc7;
+            color: var(--error);
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 18px;
+            display: none;
+            font-size: 14px;
+        }
+
+        .error-message.show { display: block; }
+
+        .user-hint {
+            margin-top: 28px;
+            padding-top: 18px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .user-hint h3 {
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .user-list { display: flex; flex-direction: column; gap: 6px; }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            background: var(--bg);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .user-item .name {
+            font-weight: 600;
+            color: var(--text);
+            min-width: 60px;
+        }
+
+        .user-item .pass {
+            font-family: monospace;
+            background: var(--primary-bg);
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <div class="logo-icon">DK</div>
+            <h1>Dake视频自动化</h1>
+            <p>小红书视频下载与剪辑工具</p>
+        </div>
+        
+        <div class="error-message" id="errorMsg"></div>
+        
+        <!-- 账号提示横幅 -->
+        <div class="credentials-banner">
+            <div class="banner-title">👇 请使用以下账号登录</div>
+            <div class="credentials-grid">
+                <div class="credential-item" onclick="fillCredentials('user_a', 'pass_a')">
+                    <div class="credential-user">用户 A</div>
+                    <div class="credential-pass">pass_a</div>
+                </div>
+                <div class="credential-item" onclick="fillCredentials('user_b', 'pass_b')">
+                    <div class="credential-user">用户 B</div>
+                    <div class="credential-pass">pass_b</div>
+                </div>
+                <div class="credential-item" onclick="fillCredentials('user_c', 'pass_c')">
+                    <div class="credential-user">用户 C</div>
+                    <div class="credential-pass">pass_c</div>
+                </div>
+            </div>
+            <div class="banner-hint">点击上方卡片自动填充</div>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <select id="username" name="username" required>
+                    <option value="">选择用户</option>
+                    <option value="user_a">用户 A</option>
+                    <option value="user_b">用户 B</option>
+                    <option value="user_c">用户 C</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" name="password" placeholder="请输入密码" required>
+            </div>
+            
+            <button type="submit" class="btn-login">登录</button>
+        </form>
+    </div>
+    
+    <script>
+        // 自动填充账号密码
+        function fillCredentials(username, password) {
+            document.getElementById('username').value = username;
+            document.getElementById('password').value = password;
+            
+            // 高亮选中的卡片
+            document.querySelectorAll('.credential-item').forEach(item => {
+                item.style.background = 'rgba(15, 23, 42, 0.6)';
+                item.style.borderColor = 'rgba(99, 102, 241, 0.3)';
+            });
+            
+            event.currentTarget.style.background = 'rgba(99, 102, 241, 0.4)';
+            event.currentTarget.style.borderColor = '#6366f1';
+        }
+        
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('errorMsg');
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    window.location.href = '/app';
+                } else {
+                    errorMsg.textContent = data.error || '登录失败';
+                    errorMsg.classList.add('show');
+                }
+            } catch (err) {
+                errorMsg.textContent = '网络错误，请重试';
+                errorMsg.classList.add('show');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Build output
+dist/
+build/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+whisper_models/
+
+# Claude
+.claude/
+
+# Temp
+temp/
+tmp/
+*.tmp
+
+# Local scripts/output
+scripts_output/
+
+# Logs
+*.log
