@@ -1,4 +1,6 @@
+import glob
 import json
+import os
 import re
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -7,6 +9,11 @@ try:
     from playwright.sync_api import sync_playwright
 except ImportError:  # pragma: no cover
     sync_playwright = None
+
+# Resolve Chromium path respecting PLAYWRIGHT_BROWSERS_PATH
+_browsers_root = os.environ.get("PLAYWRIGHT_BROWSERS_PATH", os.path.expanduser("~/.cache/ms-playwright"))
+_chrome_candidates = glob.glob(os.path.join(_browsers_root, "chromium-*", "chrome-linux64", "chrome"))
+CHROMIUM_PATH = _chrome_candidates[0] if _chrome_candidates else None
 
 
 class FacebookAdsExtractor:
@@ -65,7 +72,10 @@ class FacebookAdsExtractor:
                     pass
 
         with sync_playwright() as p:  # type: ignore[misc]
-            browser = p.chromium.launch(headless=self.headless)
+            launch_args = {"headless": self.headless}
+            if CHROMIUM_PATH:
+                launch_args["executable_path"] = CHROMIUM_PATH
+            browser = p.chromium.launch(**launch_args)
             context = browser.new_context(
                 viewport={"width": 1920, "height": 1080},
                 user_agent=(
