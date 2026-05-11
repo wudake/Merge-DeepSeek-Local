@@ -158,11 +158,24 @@ export default function ShellLayout() {
             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             onClick={() => setCollapsed(!collapsed)}
           />
-          <img
-            src="/boswindor-logo.png"
-            alt="Boswindor"
-            style={{ height: 36 }}
-          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <img
+              src="/boswindor-logo.png"
+              alt="Boswindor"
+              style={{ height: 36 }}
+            />
+            <Button
+              type="text"
+              danger
+              icon={<LogoutOutlined />}
+              onClick={() => {
+                clearAuth()
+                navigate('/login')
+              }}
+            >
+              退出登录
+            </Button>
+          </div>
         </Header>
         <Content style={{ margin: isMobile ? 12 : 24, padding: isMobile ? 12 : 24, background: '#fff', borderRadius: 8 }}>
           <Outlet />
