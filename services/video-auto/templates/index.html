@@ -616,7 +616,7 @@
             <div class="logo">
                 <div class="logo-icon">DK</div>
             </div>
-            <h1>Dake视频自动化工具</h1>
+            <h1>视频自动化工具</h1>
             <p>小红书/抖音视频下载 · 智能剪辑 · 一键导出</p>
         </div>
 
@@ -655,7 +655,7 @@
                         <input type="file" id="video-file" accept=".mp4,.mov,.avi,.mkv,.webm,.m4v" style="display:none" onchange="uploadVideo(this)">
                     </div>
                 </div>
-                <div id="uploaded-video-info" class="hidden" style="padding: 15px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; margin-bottom: 15px;">
+                <div id="uploaded-video-info" class="hidden" style="padding: 15px; background: var(--success-bg); border: 1px solid #b7eb8f; border-radius: var(--radius-sm); margin-bottom: 15px;">
                     <p style="color: var(--success); margin: 0;">✅ <span id="uploaded-filename"></span></p>
                     <p style="color: var(--text-muted); font-size: 0.85em; margin: 5px 0 0 0;">大小: <span id="uploaded-size"></span></p>
                 </div>
@@ -750,11 +750,11 @@
                 </label>
             </div>
             
-            <div id="tts-config-panel" style="display: none; padding: 20px; background: rgba(15, 23, 42, 0.5); border-radius: 12px; margin-bottom: 20px;">
+            <div id="tts-config-panel" style="display: none; padding: 20px; background: var(--bg); border: 1px solid var(--border-light); border-radius: var(--radius); margin-bottom: 20px;">
                 <div class="input-group">
                     <label>📝 输入文案</label>
                     <textarea id="tts-text" rows="3" placeholder="输入要转换为语音的文案..." 
-                        style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); border-radius: 10px; color: var(--text); resize: vertical; font-size: 15px;"></textarea>
+                        style="width: 100%; padding: 12px; background: var(--bg-white); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); resize: vertical; font-size: 15px;"></textarea>
                 </div>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
@@ -828,7 +828,7 @@
                 </div>
                 
                 <!-- TTS 播放器 -->
-                <div id="tts-player-container" class="hidden" style="margin-top: 15px; padding: 15px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px;">
+                <div id="tts-player-container" class="hidden" style="margin-top: 15px; padding: 15px; background: var(--success-bg); border: 1px solid #b7eb8f; border-radius: var(--radius-sm);">
                     <p style="color: var(--success); margin: 0 0 10px 0;">✅ 语音生成成功！可与BGM同时混音</p>
                     <audio id="tts-audio-player" controls style="width: 100%; height: 40px;"></audio>
                     <input type="hidden" id="tts-filename" value="">
@@ -858,7 +858,7 @@
             </div>
             
             <!-- 裁剪时间设置 -->
-            <div class="input-group" id="crop-time-settings" style="margin-top: 15px; padding: 15px; background: rgba(15, 23, 42, 0.5); border-radius: 10px;">
+            <div class="input-group" id="crop-time-settings" style="margin-top: 15px; padding: 15px; background: var(--bg); border: 1px solid var(--border-light); border-radius: var(--radius-sm);">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                     <div>
                         <label style="font-size: 13px; color: var(--text-muted);">去除头部 (秒)</label>
@@ -911,11 +911,11 @@
             </div>
             
             <!-- 字幕配置面板 -->
-            <div id="subtitle-config-panel" style="display: none; padding: 20px; background: rgba(15, 23, 42, 0.5); border-radius: 12px; margin-bottom: 20px;">
+            <div id="subtitle-config-panel" style="display: none; padding: 20px; background: var(--bg); border: 1px solid var(--border-light); border-radius: var(--radius); margin-bottom: 20px;">
                 
                 <div class="input-group">
                     <label>字幕内容</label>
-                    <textarea id="subtitle-text" rows="2" placeholder="输入字幕内容，例如：Hello World" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); border-radius: 10px; color: var(--text); resize: vertical;"></textarea>
+                    <textarea id="subtitle-text" rows="2" placeholder="输入字幕内容，例如：Hello World" style="width: 100%; padding: 12px; background: var(--bg-white); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); resize: vertical;"></textarea>
                 </div>
                 
                 <div class="input-group">
@@ -978,8 +978,8 @@
                 </div>
                 
                 <!-- 预览 -->
-                <div style="margin-top: 15px; padding: 20px 15px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border-radius: 10px; text-align: center; position: relative; overflow: hidden;">
-                    <div style="font-size: 11px; color: rgba(255,255,255,0.4); margin-bottom: 10px; letter-spacing: 1px;">效果预览</div>
+                <div style="margin-top: 15px; padding: 20px 15px; background: var(--bg); border: 1px solid var(--border-light); border-radius: var(--radius-sm); text-align: center; position: relative; overflow: hidden;">
+                    <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 10px; letter-spacing: 1px;">效果预览</div>
                     <div id="subtitle-preview" style="font-size: 22px; font-weight: bold; padding: 6px 14px; display: inline-block; border-radius: 4px; transition: all 0.3s ease; font-family: sans-serif;">
                         Hello World
                     </div>

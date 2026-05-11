@@ -29,7 +29,7 @@ export const routes: RouteObject[] = [
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <Navigate to="/operations/dashboard" replace /> },
+      { index: true, element: <Navigate to="/operations/contents" replace /> },
 
       // Operations module
       { path: 'operations/dashboard', element: <DashboardPage /> },

@@ -24,11 +24,6 @@ type MenuItem = Required<MenuProps>['items'][number]
 
 const menuItems: MenuItem[] = [
   {
-    key: '/operations/dashboard',
-    icon: <DashboardOutlined />,
-    label: '数据看板',
-  },
-  {
     key: '/operations/accounts',
     icon: <AccountBookOutlined />,
     label: '账号管理',
@@ -74,7 +69,6 @@ const menuItems: MenuItem[] = [
 ]
 
 function getSelectedKey(pathname: string): string {
-  if (pathname.startsWith('/operations/dashboard')) return '/operations/dashboard'
   if (pathname.startsWith('/operations/accounts')) return '/operations/accounts'
   if (pathname.startsWith('/operations/contents')) return '/operations/contents'
   if (pathname.startsWith('/operations/topics')) return '/operations/topics'
@@ -83,7 +77,7 @@ function getSelectedKey(pathname: string): string {
   if (pathname.startsWith('/scripts/completed')) return '/scripts/completed'
   if (pathname.startsWith('/video-auto')) return '/video-auto'
   if (pathname.startsWith('/settings')) return '/settings'
-  return '/operations/dashboard'
+  return '/operations/contents'
 }
 
 export default function ShellLayout() {
@@ -140,7 +134,7 @@ export default function ShellLayout() {
           justifyContent: 'center',
           borderBottom: '1px solid #f0f0f0',
         }}>
-          <Text strong style={{ fontSize: 16, whiteSpace: 'nowrap' }}>App 管理平台</Text>
+          <Text strong style={{ fontSize: 16, whiteSpace: 'nowrap' }}>Boswindor运营管理平台</Text>
         </div>
         <Menu
           mode="inline"
@@ -164,12 +158,11 @@ export default function ShellLayout() {
             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             onClick={() => setCollapsed(!collapsed)}
           />
-          <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight">
-            <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Avatar icon={<UserOutlined />} />
-              <Text>{user?.realName || user?.username || '管理员'}</Text>
-            </div>
-          </Dropdown>
+          <img
+            src="/boswindor-logo.png"
+            alt="Boswindor"
+            style={{ height: 36 }}
+          />
         </Header>
         <Content style={{ margin: isMobile ? 12 : 24, padding: isMobile ? 12 : 24, background: '#fff', borderRadius: 8 }}>
           <Outlet />

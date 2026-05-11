@@ -63,8 +63,22 @@ export default function ContentCalendarPage() {
   const screens = Grid.useBreakpoint()
   const isMobile = !screens.md
 
-  const calendarStart = currentDate.startOf(viewMode === 'week' ? 'week' : 'month').startOf('week')
-  const calendarEnd = currentDate.endOf(viewMode === 'week' ? 'week' : 'month').endOf('week')
+  // dayjs 默认周日为一周第一天，手动调整为周一始、周日终
+  const getWeekStart = (d: Dayjs) => {
+    const day = d.day() // 0=周日, 1=周一, ..., 6=周六
+    return d.subtract(day === 0 ? 6 : day - 1, 'day').startOf('day')
+  }
+  const getWeekEnd = (d: Dayjs) => {
+    const day = d.day()
+    return d.add(day === 0 ? 0 : 7 - day, 'day').endOf('day')
+  }
+
+  const calendarStart = viewMode === 'week'
+    ? getWeekStart(currentDate)
+    : getWeekStart(currentDate.startOf('month'))
+  const calendarEnd = viewMode === 'week'
+    ? getWeekEnd(currentDate)
+    : getWeekEnd(currentDate.endOf('month'))
 
   const GROUP_BG_COLORS = [
     { bg: '#e0f2fe', text: '#0369a1' },
@@ -484,8 +498,8 @@ export default function ContentCalendarPage() {
       {viewMode === 'month' && (() => {
         const monthStart = currentDate.startOf('month')
         const monthEnd = currentDate.endOf('month')
-        const startOfCalendar = monthStart.startOf('week')
-        const endOfCalendar = monthEnd.endOf('week')
+        const startOfCalendar = getWeekStart(monthStart)
+        const endOfCalendar = getWeekEnd(monthEnd)
         const totalDays = endOfCalendar.diff(startOfCalendar, 'day') + 1
         const monthDays = Array.from({ length: totalDays }, (_, i) => startOfCalendar.add(i, 'day'))
         const weekCount = Math.ceil(totalDays / 7)

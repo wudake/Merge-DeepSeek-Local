@@ -19,7 +19,7 @@ CHROMIUM_PATH = _chrome_candidates[0] if _chrome_candidates else None
 class FacebookAdsExtractor:
     """从 Facebook Ads Library 页面提取视频直链."""
 
-    def __init__(self, headless: bool = True, timeout_ms: int = 15000):
+    def __init__(self, headless: bool = True, timeout_ms: int = 30000):
         self.headless = headless
         self.timeout_ms = timeout_ms
         self._playwright = None
@@ -72,10 +72,20 @@ class FacebookAdsExtractor:
                     pass
 
         with sync_playwright() as p:  # type: ignore[misc]
-            launch_args = {"headless": self.headless}
+            launch_args: dict = {
+                "headless": self.headless,
+                "args": [
+                    "--disable-blink-features=AutomationControlled",
+                    "--disable-web-security",
+                    "--disable-features=IsolateOrigins,site-per-process",
+                ],
+            }
             if CHROMIUM_PATH:
                 launch_args["executable_path"] = CHROMIUM_PATH
             browser = p.chromium.launch(**launch_args)
+            # 优先尝试 docker0 网关，其次是 compose 网络网关
+            proxy_server = os.environ.get("PLAYWRIGHT_PROXY", "http://172.17.0.1:7890")
+
             context = browser.new_context(
                 viewport={"width": 1920, "height": 1080},
                 user_agent=(
@@ -83,11 +93,24 @@ class FacebookAdsExtractor:
                     "AppleWebKit/537.36 (KHTML, like Gecko) "
                     "Chrome/124.0.0.0 Safari/537.36"
                 ),
+                locale="en-US",
+                timezone_id="America/New_York",
+                bypass_csp=True,
+                proxy={"server": proxy_server},
             )
+            # 隐藏自动化特征（每次页面加载都注入）
+            context.add_init_script("""
+                Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+                Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
+                window.chrome = { runtime: {} };
+            """)
+
             page = context.new_page()
             page.on("response", handle_response)
 
-            page.goto(ad_url, wait_until="networkidle", timeout=self.timeout_ms)
+            page.goto(ad_url, wait_until="domcontentloaded", timeout=self.timeout_ms)
+            # domcontentloaded 后多等几秒让网络请求飞完
+            page.wait_for_timeout(5000)
 
             # 尝试点击播放按钮触发视频加载
             try:

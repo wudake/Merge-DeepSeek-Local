@@ -32,7 +32,18 @@ def verify_jwt(
         except jwt.InvalidTokenError:
             raise HTTPException(status_code=401, detail="Invalid token")
 
-    # 2. Fallback: X-API-Key header
+    # 2. Try token from query param (for <a href> download links)
+    token = request.query_params.get("token")
+    if token:
+        try:
+            payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
+            return payload
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(status_code=401, detail="Token expired")
+        except jwt.InvalidTokenError:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+    # 3. Fallback: X-API-Key header
     key = x_api_key or api_key_query or request.query_params.get("api_key")
     if key and key == settings.api_key:
         return {"auth_type": "api_key"}

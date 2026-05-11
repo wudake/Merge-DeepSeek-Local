@@ -191,8 +191,10 @@ def edit_video():
             # 生成二维码便于手机下载
             try:
                 from qr_generator import generate_video_qr
-                qr_result = generate_video_qr(output_name, port=5000, output_dir=str(BASE_DIR / "static"))
-                qr_url = f"/static/{qr_result['qr_filename']}"
+                public_url = os.environ.get('PUBLIC_URL', '')
+                qr_base = f"{public_url}/video-auto" if public_url else "/video-auto"
+                qr_result = generate_video_qr(output_name, port=5000, output_dir=str(BASE_DIR / "static"), base_url=qr_base)
+                qr_url = f"/video-auto/static/{qr_result['qr_filename']}"
                 local_ip = qr_result['local_ip']
             except Exception as e:
                 qr_url = None
@@ -201,8 +203,8 @@ def edit_video():
 
             response_data = {
                 "output_name": output_name,
-                "preview_url": f"/api/preview/{output_name}",
-                "download_url": f"/api/download/edited/{output_name}",
+                "preview_url": f"/video-auto/api/preview/{output_name}",
+                "download_url": f"/video-auto/api/download/edited/{output_name}",
                 "local_ip": local_ip
             }
             if qr_url:
@@ -334,7 +336,7 @@ def generate_tts():
             "data": {
                 "filename": filename,
                 "path": str(output_path),
-                "preview_url": f"/api/tts/preview/{filename}",
+                "preview_url": f"/video-auto/api/tts/preview/{filename}",
                 "text": text,
                 "voice": voice,
                 "speed": speed,
@@ -450,8 +452,8 @@ def edit_with_tts():
                 "success": True,
                 "data": {
                     "output_name": output_name,
-                    "preview_url": f"/api/preview/{output_name}",
-                    "download_url": f"/api/download/edited/{output_name}"
+                    "preview_url": f"/video-auto/api/preview/{output_name}",
+                    "download_url": f"/video-auto/api/download/edited/{output_name}"
                 }
             })
         else:
@@ -731,8 +733,8 @@ def publish_assistant():
             "success": True,
             "data": {
                 "video_name": video_name,
-                "video_url": f"/api/preview/{video_name}",
-                "download_url": f"/api/download/edited/{video_name}",
+                "video_url": f"/video-auto/api/preview/{video_name}",
+                "download_url": f"/video-auto/api/download/edited/{video_name}",
                 "caption": caption,
                 "hashtags": hashtags,
                 "copy_text": PublishAssistant.generate_caption(caption, hashtags),
@@ -758,16 +760,19 @@ def generate_qr(filename):
 
     try:
         # 生成二维码
+        public_url = os.environ.get('PUBLIC_URL', '')
+        qr_base = f"{public_url}/video-auto" if public_url else "/video-auto"
         result = generate_video_qr(
             safe_filename,
             port=5000,
-            output_dir=str(BASE_DIR / "static")
+            output_dir=str(BASE_DIR / "static"),
+            base_url=qr_base
         )
 
         return jsonify({
             "success": True,
             "data": {
-                "qr_url": f"/static/{result['qr_filename']}",
+                "qr_url": f"/video-auto/static/{result['qr_filename']}",
                 "download_url": result['download_url'],
                 "local_ip": result['local_ip']
             }

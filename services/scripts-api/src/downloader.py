@@ -1,3 +1,4 @@
+import os
 import socket
 from pathlib import Path
 from urllib.parse import urlparse
@@ -14,6 +15,9 @@ def _getaddrinfo_ipv4_only(host, port, family=0, type=0, proto=0, flags=0):
     return _orig_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
 
 socket.getaddrinfo = _getaddrinfo_ipv4_only
+
+# requests 全局代理（优先环境变量，默认 docker0 网关上的 mihomo）
+REQUESTS_PROXIES = {"http": os.environ.get("REQUESTS_PROXY", "http://172.17.0.1:7890"), "https": os.environ.get("REQUESTS_PROXY", "http://172.17.0.1:7890")}
 
 
 class VideoDownloader:
@@ -77,11 +81,14 @@ class VideoDownloader:
             ),
             "Referer": "https://www.facebook.com/",
         }
-        response = requests.get(video_url, headers=headers, stream=True, timeout=120)
+        # 通过代理下载，超时 5 分钟，大 chunk 减少小文件碎片开销
+        response = requests.get(
+            video_url, headers=headers, stream=True, timeout=300, proxies=REQUESTS_PROXIES
+        )
         response.raise_for_status()
 
         with open(output_path, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=8192):
+            for chunk in response.iter_content(chunk_size=256 * 1024):
                 if chunk:
                     f.write(chunk)
 
