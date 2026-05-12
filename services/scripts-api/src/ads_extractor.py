@@ -37,39 +37,55 @@ class FacebookAdsExtractor:
 
         video_urls: list[dict] = []
         watch_ids: set[str] = set()
+        _dbg = os.environ.get("ADS_EXTRACTOR_DEBUG") == "1"
+        _seen_count = [0]
 
         def handle_response(response):
-            url = response.url
+            try:
+                url = response.url
+                _seen_count[0] += 1
+                if _dbg and ("facebook.com" in url or "fbcdn" in url):
+                    import sys as _sys
+                    print(f"[ads_dbg] resp #{_seen_count[0]} {response.status} {url[:160]}", file=_sys.stderr, flush=True)
 
-            # GraphQL API: 包含 playable_url
-            if "/api/graphql/" in url:
-                try:
-                    body = response.body().decode("utf-8", errors="ignore")
-                    for line in body.strip().split("\n"):
-                        if not line:
-                            continue
-                        data = json.loads(line)
-                        _collect_urls(data, video_urls)
-                except Exception:
-                    pass
+                # fbcdn CDN 直链 (放最前面, 避免 graphql body 解析抛错时漏掉)
+                if ".mp4" in url and "fbcdn" in url:
+                    video_urls.append({
+                        "url": url,
+                        "quality": _guess_quality(url),
+                        "source": "cdn",
+                    })
+                    if _dbg:
+                        import sys as _sys
+                        print(f"[ads_dbg] >>> matched .mp4+fbcdn ({len(video_urls)})", file=_sys.stderr, flush=True)
 
-            # fbcdn CDN 直链
-            if ".mp4" in url and "fbcdn" in url:
-                video_urls.append({
-                    "url": url,
-                    "quality": _guess_quality(url),
-                    "source": "cdn",
-                })
+                # GraphQL API: 包含 playable_url
+                if "/api/graphql/" in url:
+                    try:
+                        body = response.body().decode("utf-8", errors="ignore")
+                        for line in body.strip().split("\n"):
+                            if not line:
+                                continue
+                            data = json.loads(line)
+                            _collect_urls(data, video_urls)
+                    except Exception as e:
+                        if _dbg:
+                            import sys as _sys
+                            print(f"[ads_dbg] graphql parse err: {e}", file=_sys.stderr, flush=True)
 
-            # video/unified_cvc API: 提取 vi (video ID)
-            if "facebook.com/video/unified_cvc" in url:
-                try:
-                    body = response.body().decode("utf-8", errors="ignore")
-                    match = re.search(r'"vi":\s*"?(\d+)"?', body)
-                    if match:
-                        watch_ids.add(match.group(1))
-                except Exception:
-                    pass
+                # video/unified_cvc API: 提取 vi (video ID)
+                if "facebook.com/video/unified_cvc" in url:
+                    try:
+                        body = response.body().decode("utf-8", errors="ignore")
+                        match = re.search(r'"vi":\s*"?(\d+)"?', body)
+                        if match:
+                            watch_ids.add(match.group(1))
+                    except Exception:
+                        pass
+            except Exception as e:
+                if _dbg:
+                    import sys as _sys
+                    print(f"[ads_dbg] handler outer err: {e}", file=_sys.stderr, flush=True)
 
         with sync_playwright() as p:  # type: ignore[misc]
             launch_args: dict = {
@@ -112,25 +128,77 @@ class FacebookAdsExtractor:
             # domcontentloaded 后多等几秒让网络请求飞完
             page.wait_for_timeout(5000)
 
-            # 尝试点击播放按钮触发视频加载
+            # 滚动一下触发懒加载 (Ads Library 有时滚动后才把视频塞进 DOM)
             try:
-                selectors = [
-                    'video',
-                    '[data-testid="play-button"]',
-                    '[aria-label*="Play"]',
-                    'div[role="button"]',
-                ]
-                for sel in selectors:
-                    loc = page.locator(sel).first
-                    if loc.count() > 0:
-                        loc.click(timeout=3000)
-                        page.wait_for_timeout(2000)
-                        break
+                page.evaluate("window.scrollBy(0, 400); window.scrollBy(0, -200);")
+                page.wait_for_timeout(800)
             except Exception:
                 pass
 
-            # 额外等待更多网络请求
-            page.wait_for_timeout(3000)
+            # 尝试触发视频播放: 先按选择器逐个试 click (per-selector try),
+            # 失败也不退出循环; 然后直接对所有 <video> 元素调 .play()/.load() 兜底.
+            selectors = [
+                'video',
+                '[data-testid="play-button"]',
+                '[aria-label*="Play"]',
+                '[aria-label*="播放"]',
+                'div[role="button"][tabindex="0"]',
+            ]
+            for sel in selectors:
+                try:
+                    loc = page.locator(sel).first
+                    if loc.count() == 0:
+                        continue
+                    loc.click(timeout=1500)
+                    page.wait_for_timeout(500)
+                except Exception:
+                    continue
+
+            # JS 兜底: 所有 <video> 强制 muted + play + load, 触发 CDN 请求
+            try:
+                page.evaluate(
+                    """() => {
+                      document.querySelectorAll('video').forEach(v => {
+                        try {
+                          v.muted = true;
+                          v.autoplay = true;
+                          v.playsInline = true;
+                          if (typeof v.load === 'function') v.load();
+                          const p = v.play();
+                          if (p && p.catch) p.catch(() => {});
+                        } catch (_) {}
+                      });
+                    }"""
+                )
+            except Exception:
+                pass
+
+            # 等视频 CDN 请求真正飞起来 (实测 Ads Library 在 click + play 后 5~10s 才开始拉视频)
+            page.wait_for_timeout(8000)
+
+            # 直接从 DOM 抓 <video src> / currentSrc (最可靠的兜底, 即使 click 都失败也能拿到)
+            try:
+                dom_videos = page.evaluate(
+                    """() => {
+                      const out = [];
+                      document.querySelectorAll('video').forEach(v => {
+                        if (v.currentSrc) out.push(v.currentSrc);
+                        if (v.src) out.push(v.src);
+                        v.querySelectorAll('source').forEach(s => { if (s.src) out.push(s.src); });
+                      });
+                      return out;
+                    }"""
+                )
+                for u in dom_videos or []:
+                    if isinstance(u, str) and u.startswith("http") and ("fbcdn" in u or ".mp4" in u):
+                        video_urls.append({
+                            "url": u,
+                            "quality": _guess_quality(u),
+                            "source": "dom",
+                        })
+            except Exception:
+                pass
+
             browser.close()
 
         # 从 watch IDs 构造 watch 页链接（yt_dlp 可能能处理 watch 页）
@@ -148,16 +216,26 @@ class FacebookAdsExtractor:
 
     @staticmethod
     def _pick_best(urls: list[dict]) -> str:
-        """优先选 HD > SD > watch 页."""
+        """优先选 CDN/DOM 直链 (HD > SD) > graphql > watch 页."""
+        # 先去重 (Ads Library 同一视频会同时通过 CDN/DOM 抓到)
+        seen: set[str] = set()
+        deduped: list[dict] = []
+        for item in urls:
+            u = item.get("url") or ""
+            if not u or u in seen:
+                continue
+            seen.add(u)
+            deduped.append(item)
+
         def sort_key(item):
             quality = item.get("quality", 0)
             source = item.get("source", "")
-            # CDN 直链优于 watch 页
-            source_score = 2 if source == "cdn" else 1 if source == "graphql" else 0
-            return (quality, source_score)
+            # CDN/DOM 直链优先 (能直接 yt_dlp), graphql 次之 (playable_url 也是 CDN), watch 页最后
+            source_score = {"cdn": 3, "dom": 3, "graphql": 2, "watch": 0}.get(source, 1)
+            return (source_score, quality)
 
-        urls.sort(key=sort_key, reverse=True)
-        return urls[0]["url"]
+        deduped.sort(key=sort_key, reverse=True)
+        return deduped[0]["url"]
 
     @staticmethod
     def is_ads_library_url(url: str) -> bool:
