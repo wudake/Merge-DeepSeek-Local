@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Table, Button, Input, Select, Tag, Space, Modal, Form,
-  message, Popconfirm, Card, Row, Col, DatePicker, Radio, AutoComplete, Grid
+  message, Popconfirm, Card, Row, Col, DatePicker, Radio, AutoComplete, Grid, Alert, Spin
 } from 'antd'
 import {
   PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined,
@@ -15,6 +15,7 @@ import {
 } from '../../../../api/operations/contents'
 import { getAccounts, type Account } from '../../../../api/operations/accounts'
 import { getUsers, type User } from '../../../../api/operations/users'
+import { nasApi } from '../../../../api/scripts/nas'
 
 const { Option } = Select
 const { RangePicker } = DatePicker
@@ -53,10 +54,11 @@ export default function ContentCalendarPage() {
   const [usersList, setUsersList] = useState<User[]>([])
   type PreviewInfo =
     | { type: 'social'; url: string; isVertical: boolean }
-    | { type: 'video'; url: string }
+    | { type: 'video'; url: string; kind?: 'mp4' | 'hls' }
     | { type: 'image'; url: string }
     | { type: 'pdf'; url: string }
-    | { type: 'iframe'; url: string }
+    | { type: 'iframe'; url: string; hint?: 'ugLinkShare' }
+    | { type: 'resolving'; original: string }
 
   const [previewInfo, setPreviewInfo] = useState<PreviewInfo | null>(null)
   const [form] = Form.useForm()
@@ -177,6 +179,19 @@ export default function ContentCalendarPage() {
         isVertical: true,
       }
 
+      // 绿联 NAS 分享下载链接（中转域名 ug.link 或直连域名 *.ug.link）
+      // 注意：该接口实际返回 HTML 分享详情页（含内嵌播放器/下载按钮），不是裸视频流，因此用 iframe 而非 video 渲染
+      // 但该页面是 SPA，在 iframe 中通常无法启动 — 标 hint 让渲染层加显眼的「新窗口打开」提示
+      try {
+        const u = new URL(url)
+        if ((u.hostname === 'ug.link' || u.hostname.endsWith('.ug.link'))
+            && /\/share-download(\/|$)/.test(u.pathname)) {
+          return { type: 'iframe', url, hint: 'ugLinkShare' }
+        }
+      } catch {
+        // 非标准 URL，跳过此分支
+      }
+
       // NAS / 局域网文件检测（根据扩展名）
       const lowerUrl = url.toLowerCase()
       let pathname = lowerUrl
@@ -206,14 +221,35 @@ export default function ContentCalendarPage() {
     }
   }
 
-  const handlePreview = () => {
+  const handlePreview = async () => {
     const url = form.getFieldValue('publishUrl')
     const info = getPreviewInfo(url)
-    if (info) {
-      setPreviewInfo(info)
-    } else {
+    if (!info) {
       message.error('暂不支持该链接的预览')
+      return
     }
+    // 绿联 NAS 分享页: 先尝试通过后端 Playwright 解析真实视频直链
+    if (info.type === 'iframe' && info.hint === 'ugLinkShare') {
+      setPreviewInfo({ type: 'resolving', original: url })
+      try {
+        const r = await nasApi.resolveVideo(url)
+        if (r.needs_password) {
+          message.info('该分享需要密码，请在新窗口打开并输入密码')
+          setPreviewInfo(info)
+          return
+        }
+        if (r.video_url) {
+          setPreviewInfo({ type: 'video', url: r.video_url, kind: r.kind || 'mp4' })
+          return
+        }
+        setPreviewInfo(info)
+      } catch (e: any) {
+        message.warning(`自动解析失败（${e?.message || '未知错误'}），已退回到新窗口打开`)
+        setPreviewInfo(info)
+      }
+      return
+    }
+    setPreviewInfo(info)
   }
 
   const handleSubmit = async (values: any) => {
@@ -701,6 +737,14 @@ export default function ContentCalendarPage() {
               </Space>
               {previewInfo && (
                 <div style={{ width: '100%' }}>
+                  {previewInfo.type === 'resolving' && (
+                    <div style={{ padding: 24, textAlign: 'center', background: '#fafafa', borderRadius: 8 }}>
+                      <Spin />
+                      <div style={{ marginTop: 12, color: '#666', fontSize: 12 }}>
+                        正在通过后端解析绿联分享真实地址…（首次较慢，约 5–15 秒）
+                      </div>
+                    </div>
+                  )}
                   {previewInfo.type === 'social' && (
                     <div style={{ width: '100%', maxWidth: previewInfo.isVertical ? (isMobile ? 260 : 360) : (isMobile ? '100%' : 480) }}>
                       <div style={{ position: 'relative', paddingTop: previewInfo.isVertical ? '177.78%' : '56.25%', borderRadius: 8, overflow: 'hidden', background: '#000' }}>
@@ -722,6 +766,7 @@ export default function ContentCalendarPage() {
                         controls
                         style={{ width: '100%', maxHeight: isMobile ? 360 : 480, display: 'block' }}
                         preload="metadata"
+                        onError={() => message.warning('视频加载失败：可能是非视频文件、NAS 设置了防盗链或需要登录')}
                       />
                     </div>
                   )}
@@ -743,11 +788,27 @@ export default function ContentCalendarPage() {
                     </div>
                   )}
                   {previewInfo.type === 'iframe' && (
-                    <div style={{ position: 'relative', paddingTop: '75%', borderRadius: 8, overflow: 'hidden', background: '#f5f5f5' }}>
-                      <iframe
-                        src={previewInfo.url}
-                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-                      />
+                    <div>
+                      {previewInfo.hint === 'ugLinkShare' && (
+                        <Alert
+                          type="warning"
+                          showIcon
+                          style={{ marginBottom: 8 }}
+                          message="绿联分享页无法嵌入预览"
+                          description="此链接是单页应用（SPA），iframe 中无法启动播放器，所以下方只显示加载提示。请用右侧按钮在新窗口打开真正的播放页。"
+                          action={
+                            <Button size="small" type="primary" onClick={() => window.open(previewInfo.url, '_blank')}>
+                              新窗口打开
+                            </Button>
+                          }
+                        />
+                      )}
+                      <div style={{ position: 'relative', paddingTop: '75%', borderRadius: 8, overflow: 'hidden', background: '#f5f5f5' }}>
+                        <iframe
+                          src={previewInfo.url}
+                          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                        />
+                      </div>
                     </div>
                   )}
                   <div style={{ marginTop: 4, textAlign: 'right' }}>

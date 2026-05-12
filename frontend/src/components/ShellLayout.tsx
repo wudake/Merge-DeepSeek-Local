@@ -1,23 +1,20 @@
 import { useState, useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { Layout, Menu, Avatar, Dropdown, Typography, Button, Grid } from 'antd'
+import { Layout, Menu, Typography, Button, Grid, Drawer } from 'antd'
 import {
-  DashboardOutlined,
   AccountBookOutlined,
   FileTextOutlined,
   DatabaseOutlined,
   SettingOutlined,
   LogoutOutlined,
-  UserOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
   VideoCameraOutlined,
   AudioOutlined,
+  MenuOutlined,
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 import { useAuthStore } from '../store/auth'
 
-const { Header, Sider, Content } = Layout
+const { Header, Content } = Layout
 const { Text } = Typography
 
 type MenuItem = Required<MenuProps>['items'][number]
@@ -38,7 +35,6 @@ const menuItems: MenuItem[] = [
     icon: <DatabaseOutlined />,
     label: '选题库',
   },
-  { type: 'divider' },
   {
     key: '/scripts/submit',
     icon: <AudioOutlined />,
@@ -54,13 +50,11 @@ const menuItems: MenuItem[] = [
     icon: <FileTextOutlined />,
     label: '已完成脚本',
   },
-  { type: 'divider' },
   {
     key: '/video-auto',
     icon: <VideoCameraOutlined />,
     label: '视频自动化',
   },
-  { type: 'divider' },
   {
     key: '/settings',
     icon: <SettingOutlined />,
@@ -83,59 +77,98 @@ function getSelectedKey(pathname: string): string {
 export default function ShellLayout() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user, clearAuth } = useAuthStore()
+  const { clearAuth } = useAuthStore()
   const screens = Grid.useBreakpoint()
   const isMobile = !screens.md
-  const [collapsed, setCollapsed] = useState(false)
 
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   useEffect(() => {
-    if (isMobile) setCollapsed(true)
-  }, [isMobile])
+    setMounted(true)
+  }, [])
 
-  const handleMenuClick: MenuProps['onClick'] = (e) => navigate(e.key)
-
-  const userMenuItems: MenuProps['items'] = [
-    {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: user?.realName || user?.username || '用户',
-      disabled: true,
-    },
-    { type: 'divider' },
-    {
-      key: 'logout',
-      icon: <LogoutOutlined />,
-      label: '退出登录',
-      danger: true,
-    },
-  ]
-
-  const handleUserMenuClick: MenuProps['onClick'] = ({ key }) => {
-    if (key === 'logout') {
-      clearAuth()
-      navigate('/login')
-    }
+  const handleMenuClick: MenuProps['onClick'] = (e) => {
+    navigate(e.key)
+    setDrawerOpen(false)
   }
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Sider
-        theme="light"
-        width={220}
-        collapsed={collapsed}
-        collapsedWidth={0}
-        trigger={null}
-        style={{ boxShadow: '2px 0 8px rgba(0,0,0,0.05)' }}
-      >
-        <div style={{
-          height: 64,
+      <Header
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 1000,
+          background: '#fff',
+          padding: isMobile ? '0 12px' : '0 24px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          borderBottom: '1px solid #f0f0f0',
-        }}>
-          <Text strong style={{ fontSize: 16, whiteSpace: 'nowrap' }}>Boswindor运营管理平台</Text>
+          justifyContent: 'space-between',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+          gap: 12,
+        }}
+      >
+        {/* 左侧 Logo + 标题 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <img
+            src="/boswindor-logo.png"
+            alt="Boswindor"
+            style={{ height: 32 }}
+          />
+          {mounted && !isMobile && (
+            <Text strong style={{ fontSize: 16, whiteSpace: 'nowrap' }}>
+              Boswindor运营管理平台
+            </Text>
+          )}
         </div>
+
+        {/* 中间 导航 */}
+        {mounted && isMobile ? (
+          <Button
+            type="text"
+            icon={<MenuOutlined />}
+            onClick={() => setDrawerOpen(true)}
+          />
+        ) : (
+          <Menu
+            mode="horizontal"
+            selectedKeys={[getSelectedKey(location.pathname)]}
+            items={menuItems}
+            onClick={handleMenuClick}
+            style={{
+              flex: 1,
+              borderBottom: 0,
+              justifyContent: 'center',
+              background: 'transparent',
+              minWidth: 0,
+            }}
+          />
+        )}
+
+        {/* 右侧 退出登录 */}
+        <Button
+          type="text"
+          danger
+          icon={<LogoutOutlined />}
+          onClick={() => {
+            clearAuth()
+            navigate('/login')
+          }}
+          style={{ flexShrink: 0 }}
+        >
+          {mounted && !isMobile ? '退出登录' : ''}
+        </Button>
+      </Header>
+
+      {/* 移动端抽屉导航 */}
+      <Drawer
+        title="菜单"
+        placement="right"
+        onClose={() => setDrawerOpen(false)}
+        open={drawerOpen}
+        width={220}
+        bodyStyle={{ padding: 0 }}
+      >
         <Menu
           mode="inline"
           selectedKeys={[getSelectedKey(location.pathname)]}
@@ -143,44 +176,18 @@ export default function ShellLayout() {
           onClick={handleMenuClick}
           style={{ borderRight: 0 }}
         />
-      </Sider>
-      <Layout>
-        <Header style={{
+      </Drawer>
+
+      <Content
+        style={{
+          margin: isMobile ? 12 : 24,
+          padding: isMobile ? 12 : 24,
           background: '#fff',
-          padding: '0 24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
-        }}>
-          <Button
-            type="text"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapsed(!collapsed)}
-          />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <img
-              src="/boswindor-logo.png"
-              alt="Boswindor"
-              style={{ height: 36 }}
-            />
-            <Button
-              type="text"
-              danger
-              icon={<LogoutOutlined />}
-              onClick={() => {
-                clearAuth()
-                navigate('/login')
-              }}
-            >
-              退出登录
-            </Button>
-          </div>
-        </Header>
-        <Content style={{ margin: isMobile ? 12 : 24, padding: isMobile ? 12 : 24, background: '#fff', borderRadius: 8 }}>
-          <Outlet />
-        </Content>
-      </Layout>
+          borderRadius: 8,
+        }}
+      >
+        <Outlet />
+      </Content>
     </Layout>
   )
 }
