@@ -20,4 +20,5 @@ celery_app.conf.update(
     task_track_started=True,
     task_time_limit=3600,  # 1小时超时
     worker_prefetch_multiplier=1,
+    worker_max_memory_per_child=4000,  # 单个 worker 超 4GB 时自动重启 (KB)
 )

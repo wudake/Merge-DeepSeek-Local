@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.core.config import get_settings
-from api.routers import health, nas, tasks, ws
+from api.routers import fb_ads, health, nas, tasks, ws
 
 settings = get_settings()
 
@@ -35,6 +35,7 @@ app.include_router(health.router)
 app.include_router(tasks.router)
 app.include_router(ws.router)
 app.include_router(nas.router)
+app.include_router(fb_ads.router)
 
 
 @app.get("/")

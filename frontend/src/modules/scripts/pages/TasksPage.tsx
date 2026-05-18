@@ -21,8 +21,8 @@ export default function TasksPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const fetchTasks = async () => {
-    setLoading(true)
+  const fetchTasks = async (silent = false) => {
+    if (!silent) setLoading(true)
     setError('')
     try {
       const res = await tasksApi.list(0, 50)
@@ -30,15 +30,23 @@ export default function TasksPage() {
     } catch (err: any) {
       setError(err.response?.data?.detail || '获取任务列表失败')
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }
 
   useEffect(() => {
     fetchTasks()
-    const interval = setInterval(fetchTasks, 5000)
-    return () => clearInterval(interval)
   }, [])
+
+  // 仅当存在进行中任务时才轮询，且静默刷新不闪 loading；WebSocket 已实时推送状态变更
+  const hasActiveTasks = tasks.some((t) =>
+    ['pending', 'downloading', 'extracting_audio', 'transcribing'].includes(t.status)
+  )
+  useEffect(() => {
+    if (!hasActiveTasks) return
+    const interval = setInterval(() => fetchTasks(true), 8000)
+    return () => clearInterval(interval)
+  }, [hasActiveTasks])
 
   useWebSocket((msg) => {
     if (msg.type === 'progress' || msg.type === 'status') {
@@ -169,7 +177,7 @@ export default function TasksPage() {
               清空全部
             </Button>
           </Popconfirm>
-          <Button onClick={fetchTasks} loading={loading} icon={<ReloadOutlined />}>刷新</Button>
+          <Button onClick={() => fetchTasks()} loading={loading} icon={<ReloadOutlined />}>刷新</Button>
         </Space>
       </div>
 

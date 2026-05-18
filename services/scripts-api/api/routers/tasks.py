@@ -1,6 +1,6 @@
 import json
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
@@ -21,27 +21,28 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 redis_client = redis.from_url(settings.redis_url, decode_responses=True)
 
 
+def _parse_dt(s: str | None) -> datetime | None:
+    """解析 Redis 里的 ISO 时间戳。历史数据可能没有时区标记（容器 TZ=UTC 写入的裸字符串），
+    统一按 UTC 解释，避免前端 new Date() 按浏览器本地时区误读。"""
+    if not s:
+        return None
+    dt = datetime.fromisoformat(s)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
 def _build_task_info(task_id: str) -> TaskInfo:
     meta = _get_task_meta(task_id)
     if not meta:
         raise HTTPException(status_code=404, detail="任务不存在")
 
-    async_result = AsyncResult(task_id, app=celery_app)
-
-    # Celery 状态优先
-    celery_state = async_result.state or meta.get("status", "pending")
-    status_map = {
-        "PENDING": "pending",
-        "STARTED": "downloading",
-        "DOWNLOADING": "downloading",
-        "EXTRACTING_AUDIO": "extracting_audio",
-        "TRANSCRIBING": "transcribing",
-        "SAVING": "transcribing",
-        "SUCCESS": "completed",
-        "FAILURE": "failed",
-        "RETRY": "pending",
-    }
-    mapped_status = status_map.get(celery_state, meta.get("status", "pending"))
+    # meta 是 worker 写入的真实状态。Celery AsyncResult.state 在 result backend
+    # 过期后会回退为 "PENDING"，不能作为唯一真相，否则已完成任务会被错误显示为等待中。
+    mapped_status = meta.get("status", "pending")
+    # worker 在保存阶段会写 "saving"，对外归并为 "transcribing"（TaskStatus 枚举无 saving）
+    if mapped_status == "saving":
+        mapped_status = "transcribing"
 
     created_at = meta.get("created_at")
     updated_at = meta.get("updated_at")
@@ -55,9 +56,9 @@ def _build_task_info(task_id: str) -> TaskInfo:
         output_format=OutputFormat(meta.get("output_format", "json")),
         use_local=meta.get("use_local", "True").lower() == "true",
         model_size=meta.get("model_size", "small"),
-        created_at=datetime.fromisoformat(created_at) if created_at else datetime.now(),
-        updated_at=datetime.fromisoformat(updated_at) if updated_at else None,
-        completed_at=datetime.fromisoformat(completed_at) if completed_at else None,
+        created_at=_parse_dt(created_at) or datetime.now(timezone.utc),
+        updated_at=_parse_dt(updated_at),
+        completed_at=_parse_dt(completed_at),
         error_message=meta.get("error_message") or None,
         result_url=meta.get("result_url") or None,
         progress=int(meta.get("progress", 0)),

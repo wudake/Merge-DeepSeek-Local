@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Form, Input, Select, Button, Typography, Space, message, Radio, Row, Col } from 'antd'
-import { LinkOutlined, AudioOutlined, ApiOutlined, GlobalOutlined, FileTextOutlined, CloudOutlined } from '@ant-design/icons'
+import { Card, Form, Input, Select, Button, Typography, Space, message, Radio, Row, Col, Alert } from 'antd'
+import { LinkOutlined, AudioOutlined, ApiOutlined, GlobalOutlined, FileTextOutlined, CloudOutlined, InfoCircleOutlined } from '@ant-design/icons'
 import { tasksApi } from '../../../api/scripts/tasks'
 import { isValidVideoUrl } from '../utils/validation'
 
@@ -55,6 +55,15 @@ export default function SubmitPage() {
       <Text type="secondary" style={{ display: 'block', marginBottom: 24, lineHeight: 1.6 }}>
         粘贴 Facebook、YouTube 或 Facebook Ads Library 视频链接，系统自动下载视频、提取音频并完成语音识别，输出 TXT / SRT / VTT / JSON 格式的文字脚本。支持本地 Whisper 模型（免费）或 OpenAI API（付费）两种转写引擎。
       </Text>
+
+      <Alert
+        message="任务并发提醒"
+        description="当前服务器同时最多运行 2 个任务，多余任务会自动排队。建议等现有任务完成后再提交新任务，避免长时间等待。"
+        type="info"
+        showIcon
+        icon={<InfoCircleOutlined />}
+        style={{ marginBottom: 16, borderRadius: 8 }}
+      />
 
       <Card style={{ borderRadius: 8 }}>
         <Form

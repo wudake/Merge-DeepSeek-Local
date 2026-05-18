@@ -22,6 +22,7 @@ const PLATFORM_MAP: Record<string, string> = {
   INSTAGRAM: 'INS',
   TIKTOK: 'TK',
   YOUTUBE: 'YTB',
+  WECHAT_CHANNEL: '微信视频号',
 }
 
 const PLATFORM_STYLE: Record<string, { bg: string; color: string; border: string }> = {
@@ -29,6 +30,7 @@ const PLATFORM_STYLE: Record<string, { bg: string; color: string; border: string
   INSTAGRAM: { bg: '#fff0f6', color: '#c41d7f', border: '#ffadd2' },
   TIKTOK:    { bg: '#f6ffed', color: '#389e0d', border: '#b7eb8f' },
   YOUTUBE:   { bg: '#fff2f0', color: '#cf1322', border: '#ffa39e' },
+  WECHAT_CHANNEL: { bg: '#f0fff4', color: '#07c160', border: '#95eeba' },
 }
 
 const PLATFORM_ORDER: Record<string, number> = {
@@ -36,6 +38,7 @@ const PLATFORM_ORDER: Record<string, number> = {
   INSTAGRAM: 2,
   TIKTOK: 3,
   YOUTUBE: 4,
+  WECHAT_CHANNEL: 5,
 }
 
 const CUSTOM_GROUP_ORDER: Record<string, number> = {

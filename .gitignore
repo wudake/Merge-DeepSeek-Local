@@ -36,3 +36,4 @@ scripts_output/
 
 # Logs
 *.log
+*.tsbuildinfo

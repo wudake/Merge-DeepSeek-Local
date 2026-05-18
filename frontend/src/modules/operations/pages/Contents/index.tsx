@@ -16,6 +16,7 @@ import {
 import { getAccounts, type Account } from '../../../../api/operations/accounts'
 import { getUsers, type User } from '../../../../api/operations/users'
 import { nasApi } from '../../../../api/scripts/nas'
+import { fbAdsApi } from '../../../../api/scripts/fb_ads'
 
 const { Option } = Select
 const { RangePicker } = DatePicker
@@ -58,7 +59,8 @@ export default function ContentCalendarPage() {
     | { type: 'image'; url: string }
     | { type: 'pdf'; url: string }
     | { type: 'iframe'; url: string; hint?: 'ugLinkShare' }
-    | { type: 'resolving'; original: string }
+    | { type: 'fbAds'; url: string }
+    | { type: 'resolving'; original: string; hint?: 'fbAds' }
 
   const [previewInfo, setPreviewInfo] = useState<PreviewInfo | null>(null)
   const [form] = Form.useForm()
@@ -90,6 +92,21 @@ export default function ContentCalendarPage() {
     { bg: '#f3e8ff', text: '#7c3aed' },
     { bg: '#ffe4e6', text: '#be123c' },
   ]
+
+  const OPERATOR_TAG_COLORS = [
+    'blue', 'cyan', 'geekblue', 'gold', 'green', 'lime',
+    'magenta', 'orange', 'purple', 'red', 'volcano', 'yellow',
+  ]
+
+  const getOperatorColor = (name: string | undefined): string => {
+    if (!name) return 'blue'
+    let hash = 0
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash)
+    }
+    const idx = Math.abs(hash) % OPERATOR_TAG_COLORS.length
+    return OPERATOR_TAG_COLORS[idx]
+  }
 
   const accountOptions = useMemo(() => {
     const groupMap = new Map<string, number>()
@@ -179,6 +196,11 @@ export default function ContentCalendarPage() {
         isVertical: true,
       }
 
+      // Facebook Ads Library
+      if (/facebook\.com\/ads\/library\/\?id=\d+/.test(url)) {
+        return { type: 'fbAds', url }
+      }
+
       // 绿联 NAS 分享下载链接（中转域名 ug.link 或直连域名 *.ug.link）
       // 注意：该接口实际返回 HTML 分享详情页（含内嵌播放器/下载按钮），不是裸视频流，因此用 iframe 而非 video 渲染
       // 但该页面是 SPA，在 iframe 中通常无法启动 — 标 hint 让渲染层加显眼的「新窗口打开」提示
@@ -246,6 +268,23 @@ export default function ContentCalendarPage() {
       } catch (e: any) {
         message.warning(`自动解析失败（${e?.message || '未知错误'}），已退回到新窗口打开`)
         setPreviewInfo(info)
+      }
+      return
+    }
+    // Facebook Ads Library: 通过后端 Playwright 提取视频直链
+    if (info.type === 'fbAds') {
+      setPreviewInfo({ type: 'resolving', original: url, hint: 'fbAds' })
+      try {
+        const r = await fbAdsApi.resolveVideo(url)
+        if (r.video_url) {
+          setPreviewInfo({ type: 'video', url: r.video_url, kind: 'mp4' })
+          return
+        }
+        message.warning('未提取到视频链接，已退回到新窗口打开')
+        setPreviewInfo({ type: 'iframe', url })
+      } catch (e: any) {
+        message.warning(`解析失败（${e?.message || '未知错误'}），已退回到新窗口打开`)
+        setPreviewInfo({ type: 'iframe', url })
       }
       return
     }
@@ -349,7 +388,9 @@ export default function ContentCalendarPage() {
       title: '负责人',
       dataIndex: 'operator',
       key: 'operator',
-      render: (op: ContentItem['operator']) => op?.realName || '-',
+      render: (op: ContentItem['operator']) => op?.realName
+        ? <Tag color={getOperatorColor(op.realName)} style={{ fontSize: 12 }}>{op.realName}</Tag>
+        : '-',
     },
     {
       title: '发布时间',
@@ -506,7 +547,7 @@ export default function ContentCalendarPage() {
                         </div>
                         <div>
                           {c.operator && (
-                            <Tag color="blue" style={{ fontSize: 10, lineHeight: '16px', padding: '0 4px' }}>
+                            <Tag color={getOperatorColor(c.operator.realName)} style={{ fontSize: 10, lineHeight: '16px', padding: '0 4px' }}>
                               {c.operator.realName}
                             </Tag>
                           )}
@@ -741,7 +782,9 @@ export default function ContentCalendarPage() {
                     <div style={{ padding: 24, textAlign: 'center', background: '#fafafa', borderRadius: 8 }}>
                       <Spin />
                       <div style={{ marginTop: 12, color: '#666', fontSize: 12 }}>
-                        正在通过后端解析绿联分享真实地址…（首次较慢，约 5–15 秒）
+                        {previewInfo.hint === 'fbAds'
+                          ? '正在通过后端解析 Facebook Ads Library 视频地址…（首次较慢，约 10–20 秒）'
+                          : '正在通过后端解析绿联分享真实地址…（首次较慢，约 5–15 秒）'}
                       </div>
                     </div>
                   )}

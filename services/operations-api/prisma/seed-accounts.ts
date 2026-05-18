@@ -10,6 +10,7 @@ const PLATFORM_MAP: Record<string, Platform> = {
   Ins: Platform.INSTAGRAM,
   YTB: Platform.YOUTUBE,
   TK: Platform.TIKTOK,
+  WX: Platform.WECHAT_CHANNEL,
 };
 
 const STATUS_MAP: Record<string, AccountStatus> = {

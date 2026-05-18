@@ -23,6 +23,7 @@ enum Platform {
   INSTAGRAM
   YOUTUBE
   FACEBOOK
+  WECHAT_CHANNEL
 }
 
 enum AccountStatus {

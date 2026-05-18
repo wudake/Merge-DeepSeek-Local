@@ -4,7 +4,7 @@ import sys
 import time
 import traceback
 import warnings
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
@@ -77,7 +77,7 @@ def _get_task_meta(task_id: str) -> dict:
 
 def _init_task_meta(task_id: str, url: str, params: dict):
     key = f"task_meta:{task_id}"
-    now = datetime.now().isoformat()
+    now = datetime.now(timezone.utc).isoformat()
     redis_client.hset(key, mapping={
         "id": task_id,
         "url": url,
@@ -110,21 +110,21 @@ def process_video(self: Task, task_id: str, url: str, params: dict):
 
         # 2. 下载视频
         self.update_state(state="DOWNLOADING", meta={"progress": 10})
-        _update_task_meta(task_id, status="downloading", progress=10, updated_at=datetime.now())
+        _update_task_meta(task_id, status="downloading", progress=10, updated_at=datetime.now(timezone.utc))
 
         downloader = VideoDownloader(temp_dir=str(temp_dir))
         video_path = downloader.download(url)
 
         # 3. 提取音频
         self.update_state(state="EXTRACTING_AUDIO", meta={"progress": 30})
-        _update_task_meta(task_id, status="extracting_audio", progress=30, updated_at=datetime.now())
+        _update_task_meta(task_id, status="extracting_audio", progress=30, updated_at=datetime.now(timezone.utc))
 
         extractor = AudioExtractor(temp_dir=str(temp_dir))
         audio_path = extractor.extract(video_path)
 
         # 4. 语音识别
         self.update_state(state="TRANSCRIBING", meta={"progress": 50})
-        _update_task_meta(task_id, status="transcribing", progress=50, updated_at=datetime.now())
+        _update_task_meta(task_id, status="transcribing", progress=50, updated_at=datetime.now(timezone.utc))
 
         language = None if params.get("language") == "auto" else params.get("language")
 
@@ -144,7 +144,7 @@ def process_video(self: Task, task_id: str, url: str, params: dict):
 
         # 5. 保存结果
         self.update_state(state="SAVING", meta={"progress": 90})
-        _update_task_meta(task_id, status="saving", progress=90, updated_at=datetime.now())
+        _update_task_meta(task_id, status="saving", progress=90, updated_at=datetime.now(timezone.utc))
 
         output_path = output_dir / f"{task_id}.{params.get('output_format', 'json')}"
         formatter_save(result, str(output_path), fmt=params.get("output_format", "json"))
@@ -163,8 +163,8 @@ def process_video(self: Task, task_id: str, url: str, params: dict):
             duration=str(result.get("duration", 0)),
             result_url=f"/tasks/{task_id}/download",
             video_url=f"/tasks/{task_id}/download-video",
-            updated_at=datetime.now(),
-            completed_at=datetime.now(),
+            updated_at=datetime.now(timezone.utc),
+            completed_at=datetime.now(timezone.utc),
         )
 
         # 清理临时文件
@@ -188,7 +188,7 @@ def process_video(self: Task, task_id: str, url: str, params: dict):
             task_id,
             status="failed",
             error_message=error_msg,
-            updated_at=datetime.now(),
+            updated_at=datetime.now(timezone.utc),
         )
         # 记录到日志文件
         log_path = output_dir / f"{task_id}.error.log"
