@@ -37,3 +37,12 @@ scripts_output/
 # Logs
 *.log
 *.tsbuildinfo
+
+# Environment (contains secrets)
+.env
+.env.local
+
+# Large media files
+*.mp3
+*.mp4
+*.mov

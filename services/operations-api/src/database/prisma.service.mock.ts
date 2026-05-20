@@ -45,6 +45,14 @@ export const createMockPrismaService = (): jest.MockedObject<PrismaService> => {
       delete: jest.fn(),
       count: jest.fn(),
     },
+    socialMediaCommand: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      count: jest.fn(),
+    },
     $connect: jest.fn(),
     $disconnect: jest.fn(),
   } as unknown as jest.MockedObject<PrismaService>;

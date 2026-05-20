@@ -6,6 +6,7 @@ import { UsersModule } from './modules/users/users.module';
 import { AccountsModule } from './modules/accounts/accounts.module';
 import { TopicsModule } from './modules/topics/topics.module';
 import { ContentsModule } from './modules/contents/contents.module';
+import { SocialMediaCommandsModule } from './modules/social-commands/social-commands.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { ContentsModule } from './modules/contents/contents.module';
     AccountsModule,
     TopicsModule,
     ContentsModule,
+    SocialMediaCommandsModule,
   ],
 })
 export class AppModule {}

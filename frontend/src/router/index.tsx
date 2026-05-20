@@ -8,6 +8,7 @@ import DashboardPage from '../modules/operations/pages/Dashboard'
 import AccountListPage from '../modules/operations/pages/Accounts'
 import ContentCalendarPage from '../modules/operations/pages/Contents'
 import TopicListPage from '../modules/operations/pages/Topics'
+import SocialCommandsPage from '../modules/operations/pages/SocialCommands'
 import SettingsPage from '../modules/operations/pages/Settings'
 
 // Scripts pages
@@ -36,6 +37,7 @@ export const routes: RouteObject[] = [
       { path: 'operations/accounts', element: <AccountListPage /> },
       { path: 'operations/contents', element: <ContentCalendarPage /> },
       { path: 'operations/topics', element: <TopicListPage /> },
+      { path: 'operations/social-commands', element: <SocialCommandsPage /> },
 
       // Scripts module
       { path: 'scripts/submit', element: <SubmitPage /> },

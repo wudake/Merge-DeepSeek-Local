@@ -5,6 +5,7 @@ import {
   AccountBookOutlined,
   FileTextOutlined,
   DatabaseOutlined,
+  BookOutlined,
   SettingOutlined,
   LogoutOutlined,
   VideoCameraOutlined,
@@ -34,6 +35,11 @@ const menuItems: MenuItem[] = [
     key: '/operations/topics',
     icon: <DatabaseOutlined />,
     label: '选题库',
+  },
+  {
+    key: '/operations/social-commands',
+    icon: <BookOutlined />,
+    label: '社媒指令',
   },
   {
     key: '/scripts/submit',
@@ -66,6 +72,7 @@ function getSelectedKey(pathname: string): string {
   if (pathname.startsWith('/operations/accounts')) return '/operations/accounts'
   if (pathname.startsWith('/operations/contents')) return '/operations/contents'
   if (pathname.startsWith('/operations/topics')) return '/operations/topics'
+  if (pathname.startsWith('/operations/social-commands')) return '/operations/social-commands'
   if (pathname.startsWith('/scripts/submit')) return '/scripts/submit'
   if (pathname.startsWith('/scripts/tasks')) return '/scripts/tasks'
   if (pathname.startsWith('/scripts/completed')) return '/scripts/completed'
