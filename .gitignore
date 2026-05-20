@@ -42,7 +42,6 @@ scripts_output/
 .env
 .env.local
 
-# Large media files
-*.mp3
+# Large media files (video excluded, audio tracked via Git LFS)
 *.mp4
 *.mov

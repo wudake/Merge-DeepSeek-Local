@@ -2,13 +2,15 @@
 
 三合一内容运营自动化平台，整合 **运营管理**、**视频脚本提取**、**视频自动化剪辑** 三大模块，Docker Compose 一键部署。
 
+**当前版本：V3.7.0** (2026-05-20)
+
 ---
 
 ## 架构概览
 
 ```
 ┌─────────────────────────────────────────────────┐
-│                  Nginx (port 80)                 │
+│               Nginx (port 18088)                 │
 │        SPA 前端 + API 反向代理 + WebSocket        │
 └──────┬──────────┬──────────┬────────────────────┘
        │          │          │
@@ -23,7 +25,7 @@
      ▼            ▼
 ┌──────────┐ ┌──────────┐
 │PostgreSQL│ │  Redis   │
-│   :5432  │ │  :6379   │
+│  :15432  │ │ :16379   │
 └──────────┘ └────┬─────┘
                   │
                   ▼
@@ -33,19 +35,22 @@
           └──────────────┘
 ```
 
+> 生产环境使用非默认端口：HTTP `18088`、PostgreSQL `15432`、Redis `16379`，避免与宿主机现有服务冲突。
+
 ---
 
 ## 技术栈
 
 | 层 | 技术 |
 |---|---|
-| 前端 | React 18 + TypeScript + Ant Design 5 + Vite |
+| 前端 | React 19 + TypeScript + Ant Design 5 + Vite |
 | 运营后端 | NestJS + Prisma ORM + PostgreSQL |
 | 脚本后端 | FastAPI + Celery + Redis |
 | 视频处理 | Flask + FFmpeg + edge-tts + Playwright |
 | 语音识别 | faster-whisper (本地) / OpenAI API |
 | 基础设施 | PostgreSQL 16 + Redis 7 + Nginx |
 | 部署 | Docker Compose (8 个服务) |
+| 测试 | Vitest (前端) + Jest (后端) + Supertest (E2E) |
 
 ---
 
@@ -62,27 +67,38 @@ Merge-DeepSeek-Local/
 │   │   ├── modules/
 │   │   │   ├── auth/              # 登录认证
 │   │   │   ├── operations/        # 运营管理模块
+│   │   │   │   └── pages/
+│   │   │   │       ├── Accounts/      # 账号管理
+│   │   │   │       ├── Contents/      # 内容日历
+│   │   │   │       ├── Topics/        # 话题库
+│   │   │   │       ├── SocialCommands/# 社媒指令 (V3.7.0)
+│   │   │   │       └── Dashboard/     # 仪表盘
 │   │   │   ├── scripts/           # 脚本提取模块
 │   │   │   └── video-auto/        # 视频自动化 (iframe)
 │   │   ├── api/                   # API 客户端
 │   │   ├── components/            # 共享组件
 │   │   ├── router/                # 路由配置
-│   │   └── store/                 # 状态管理
-│   └── vite.config.ts
+│   │   ├── store/                 # 状态管理 (Zustand)
+│   │   └── test/                  # 测试配置 (V3.7.0)
+│   └── vitest.config.ts           # Vitest 配置
 ├── infrastructure/
-│   └── postgres/init/             # 数据库初始化脚本
+│   └── postgres/
+│       ├── init/                  # 数据库初始化脚本
+│       └── seed-data.sql          # 历史数据导出 (V3.7.0)
 ├── services/
 │   ├── operations-api/            # NestJS 运营管理 API
 │   │   ├── prisma/                # 数据库模型 & 迁移
-│   │   └── src/modules/
-│   │       ├── accounts/          # 账号管理
-│   │       ├── auth/              # JWT 认证
-│   │       ├── contents/          # 内容管理
-│   │       ├── topics/            # 话题管理
-│   │       └── users/             # 用户管理
+│   │   ├── src/modules/
+│   │   │   ├── accounts/          # 账号管理
+│   │   │   ├── auth/              # JWT 认证 + 刷新
+│   │   │   ├── contents/          # 内容管理
+│   │   │   ├── topics/            # 话题管理
+│   │   │   ├── users/             # 用户管理
+│   │   │   └── social-commands/   # 社媒指令 (V3.7.0)
+│   │   └── test/                  # E2E 测试 (V3.7.0)
 │   ├── scripts-api/               # FastAPI 脚本提取 API
 │   │   ├── api/
-│   │   │   ├── routers/           # 路由 (health, tasks, ws)
+│   │   │   ├── routers/           # 路由 (health, tasks, ws, nas, fb_ads)
 │   │   │   └── tasks/             # Celery 异步任务
 │   │   └── src/                   # 核心引擎
 │   │       ├── downloader.py      # 视频下载
@@ -98,9 +114,9 @@ Merge-DeepSeek-Local/
 │       │   ├── downloader_pw.py   # 小红书下载器
 │       │   └── publisher.py       # 多平台发布
 │       ├── templates/             # Flask Jinja2 模板
-│       └── assets/                # BGM / TTS / Logo 资源
+│       └── assets/                # BGM (Git LFS) / TTS / Logo
 ├── docker-compose.yml             # 一键部署配置
-└── .env                           # 环境变量
+└── .env                           # 环境变量 (不提交到仓库)
 ```
 
 ---
@@ -112,12 +128,16 @@ Merge-DeepSeek-Local/
 - Docker 20.10+ & Docker Compose 2.0+
 - 内存 8GB+ (本地 Whisper 需要)
 - 磁盘 20GB+
+- Git LFS (用于拉取 BGM 等大文件)
 
 ### 部署
 
 ```bash
 git clone https://github.com/wudake/Merge-DeepSeek-Local.git
 cd Merge-DeepSeek-Local
+
+# 拉取 Git LFS 管理的文件（BGM 等）
+git lfs pull
 
 # 生产环境：修改 .env 中的 JWT_SECRET 和 POSTGRES_PASSWORD
 # 可选：设置 OPENAI_API_KEY (使用 OpenAI 转写引擎时需要)
@@ -129,16 +149,16 @@ docker compose up -d --build
 1. 拉取/构建所有镜像（video-auto 构建 ~4 分钟）
 2. 启动 PostgreSQL + Redis 基础设施
 3. operations-api 自动运行 Prisma 迁移
-4. entrypoint 检测到空库，自动导入历史数据（账号/话题/内容等）
+4. entrypoint 检测到空库，自动导入历史数据（`infrastructure/postgres/seed-data.sql`）
 5. 所有服务就绪
 
-访问 `http://localhost` 进入登录页。
+访问 `http://localhost:18088` 进入登录页。
 
 ### 默认账号
 
 | 用户名 | 密码 | 角色 |
 |--------|------|------|
-| `admin` | 导入数据的原始密码 | 超级管理员 |
+| `admin` | `admin123` | 超级管理员 |
 | `danny` | 导入数据的原始密码 | 操作员 |
 | `benny` | 导入数据的原始密码 | 操作员 |
 
@@ -202,7 +222,7 @@ docker compose restart operations-api  # 重新运行迁移
 
 ### 历史数据
 
-服务首次部署时自动导入预置历史数据（位于 `services/operations-api/prisma/seed-data.sql`），包含 66 条话题、21 个账号、33 条内容等。原始备份位于 `infrastructure/postgres/init/02-import-data.sql`。
+服务首次部署时自动导入预置历史数据（位于 `infrastructure/postgres/seed-data.sql`），包含话题、账号、内容、社媒指令等。原始备份位于 `infrastructure/postgres/init/02-import-data.sql`。
 
 ---
 
@@ -214,7 +234,9 @@ docker compose restart operations-api  # 重新运行迁移
 | nginx 502 Bad Gateway | nginx 容器缓存了旧 DNS，指向不存在的后端 IP | `docker compose exec nginx nginx -s reload` |
 | 访问 localhost 无响应 | Docker Desktop 未运行 | 启动 Docker Desktop |
 | 首次构建特别慢 | video-auto 镜像包含 PyTorch 依赖 | 正常现象，后续构建会有缓存 |
-| 数据库空（没有历史数据） | entrypoint 未找到 seed-data.sql | 检查 `services/operations-api/prisma/seed-data.sql` 是否存在 |
+| 数据库空（没有历史数据） | entrypoint 未找到 seed-data.sql | 检查 `infrastructure/postgres/seed-data.sql` 是否存在 |
+| BGM 文件缺失 | 未执行 `git lfs pull` | 运行 `git lfs pull` 拉取大文件 |
+| 登录后很快被踢出 | access token 24h 过期，前端缺少自动刷新 | V3.7.0 已修复：401 时自动调用 `/auth/refresh` |
 
 ---
 
@@ -222,7 +244,7 @@ docker compose restart operations-api  # 重新运行迁移
 
 ### 1. 运营管理 (Operations)
 
-面向内容运营团队的管理后台，提供账号、话题、内容的增删改查。
+面向内容运营团队的管理后台，提供账号、话题、内容、社媒指令的增删改查。
 
 | 页面 | 路径 | 功能 |
 |---|---|---|
@@ -230,12 +252,18 @@ docker compose restart operations-api  # 重新运行迁移
 | 账号管理 | `/operations/accounts` | 社媒账号 CRUD |
 | 内容日历 | `/operations/contents` | 内容排期管理 |
 | 话题管理 | `/operations/topics` | 话题库维护 |
+| 社媒指令 | `/operations/social-commands` | Markdown 指令管理 (V3.7.0) |
+
+**社媒指令 (V3.7.0)**：支持 Markdown 格式的社媒运营指令模板，可预览、全屏阅读，方便内容团队复用标准化话术。
 
 **API 端点** (前缀 `/api/v1/`)：
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | POST | `/auth/login` | 用户登录 |
+| POST | `/auth/refresh` | 刷新 Access Token |
+| POST | `/auth/logout` | 退出登录 |
+| GET | `/auth/me` | 获取当前用户信息 |
 | GET/POST | `/users` | 用户列表/创建 |
 | GET/PUT/DELETE | `/users/:id` | 用户操作 |
 | GET/POST | `/accounts` | 账号列表/创建 |
@@ -244,10 +272,12 @@ docker compose restart operations-api  # 重新运行迁移
 | GET/PUT/DELETE | `/topics/:id` | 话题操作 |
 | GET/POST | `/contents` | 内容列表/创建 |
 | GET/PUT/DELETE | `/contents/:id` | 内容操作 |
+| GET/POST | `/social-commands` | 社媒指令列表/创建 (V3.7.0) |
+| GET/PUT/DELETE | `/social-commands/:id` | 社媒指令操作 (V3.7.0) |
 
 ### 2. 脚本提取 (Scripts)
 
-将 Facebook / YouTube / Ads Library 视频音频提取并转写为文字脚本，支持双引擎转写。
+将 Facebook / YouTube / Ads Library / 绿联 NAS 视频音频提取并转写为文字脚本，支持双引擎转写。
 
 | 页面 | 路径 | 功能 |
 |---|---|---|
@@ -292,6 +322,21 @@ docker compose restart operations-api  # 重新运行迁移
 
 该模块以 iframe 形式嵌入前端 (`/video-auto`)，保持独立 Flask 部署。
 
+**BGM 资源**：31 首免版权背景音，通过 Git LFS 管理，位于 `services/video-auto/assets/bgm/`。
+
+---
+
+## 认证机制
+
+采用 JWT Bearer Token 认证，跨服务共享同一 `JWT_SECRET`。
+
+| Token | 有效期 | 说明 |
+|-------|--------|------|
+| Access Token | 24h | 用于 API 请求认证 |
+| Refresh Token | 7d | 用于换取新的 Access Token |
+
+**自动刷新 (V3.7.0)**：前端在收到 401 响应时，自动调用 `/auth/refresh` 换取新 Access Token 并重试原请求。Refresh Token 过期后才需要重新登录。
+
 ---
 
 ## 环境变量
@@ -301,12 +346,14 @@ docker compose restart operations-api  # 重新运行迁移
 | 变量 | 默认值 | 说明 |
 |---|---|---|
 | `JWT_SECRET` | `app-shared-jwt-secret-change-me-in-production` | JWT 签名密钥，**生产环境务必修改** |
-| `JWT_EXPIRES_IN` | `24h` | Token 过期时间 |
-| `JWT_REFRESH_EXPIRES_IN` | `7d` | 刷新 Token 过期时间 |
+| `JWT_EXPIRES_IN` | `24h` | Access Token 过期时间 |
+| `JWT_REFRESH_EXPIRES_IN` | `7d` | Refresh Token 过期时间 |
 | `POSTGRES_USER` | `app` | 数据库用户名 |
 | `POSTGRES_PASSWORD` | `app_password` | 数据库密码，**生产环境务必修改** |
 | `OPENAI_API_KEY` | (空) | OpenAI API Key (使用 OpenAI 转写引擎时必填) |
 | `SCRIPTS_API_KEY` | `dev-api-key-change-me` | 脚本服务内部 API Key |
+
+> `.env` 文件包含敏感信息，**请勿提交到 Git 仓库**（已加入 `.gitignore`）。首次部署时请复制 `.env.example` 并修改。
 
 ---
 
@@ -320,6 +367,12 @@ npm install
 npm run dev          # Vite 开发服务器 :5173
 ```
 
+**前端测试** (V3.7.0)：
+```bash
+cd frontend
+npx vitest run       # 运行单元测试
+```
+
 ### 后端开发
 
 各服务源码在 `services/` 目录下，Docker 挂载了源码目录，修改后自动热重载：
@@ -327,11 +380,52 @@ npm run dev          # Vite 开发服务器 :5173
 - **scripts-api**: `services/scripts-api/src/` 挂载到容器 `/app/src`
 - **video-auto**: 需要重新构建镜像 (`docker compose up -d --build video-auto`)
 
+**后端测试** (V3.7.0)：
+```bash
+cd services/operations-api
+npm run test         # 单元测试
+npm run test:e2e     # E2E 测试
+```
+
 ---
 
-## 版本
+## 版本历史
 
-**v1.0.0** — 2026-05-10
+### V3.7.0 (2026-05-20)
+
+- **社媒指令模块**：新增 Markdown 格式的社媒运营指令管理（CRUD + 预览 + 全屏阅读）
+- **前端自动刷新**：401 时自动调用 `/auth/refresh` 换取新 token，避免频繁重新登录
+- **预览优化**：社媒指令预览窗口加大至 960px / 80vh，支持全屏切换
+- **测试体系**：Vitest 前端测试 + Jest 后端测试 + Supertest E2E 测试，共 138 个测试用例
+- **数据导出**：`infrastructure/postgres/seed-data.sql` 包含完整历史数据
+- **Git LFS**：BGM 音频资源通过 Git LFS 管理
+
+### V3.6.0 (2026-05-18)
+
+- 修复任务状态显示、优化轮询刷新
+- 增强代理稳定性（mihomo Smart Fallback）
+- 添加并发提醒
+- 86 节点代理池扩容
+
+### V3.3.0 (2026-05-10)
+
+- 修复 ads_extractor 在 Facebook Ads Library 无法捕获视频直链
+
+### V3.2.0
+
+- 绿联 NAS 分享视频当前页预览
+- Shell 导航交互优化
+
+### V2.2.0
+
+- 添加退出登录按钮，优化 Header 交互
+
+### V2.0.0
+
+- 三合一平台整合
+- 视频自动化 / 脚本提取 / 运营模块全面优化
+
+### V1.0.0 (2026-05-10)
 
 - 三模块统一整合
 - Ant Design 统一前端风格
